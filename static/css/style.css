@@ -5,8 +5,11 @@
     box-sizing: border-box;
 }
 
+/* 导入JetBrains Mono字体 */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'JetBrains Mono', monospace;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     background-image: 
         radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
@@ -85,10 +88,47 @@ body::before {
 
 .header-content {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     position: relative;
     z-index: 1;
+}
+
+/* 语言切换按钮样式 */
+.language-switch {
+    display: flex;
+    gap: 8px;
+    background: rgba(41, 51, 71, 0.8);
+    padding: 6px;
+    border-radius: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.lang-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 16px;
+    background: transparent;
+    color: #94a3b8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.lang-btn:hover {
+    color: #f8fafc;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.lang-btn.active {
+    color: white;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
 }
 
 .title {

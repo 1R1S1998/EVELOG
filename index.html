@@ -17,30 +17,34 @@
                     <i class="fas fa-file-alt"></i>
                     EVE Online Log Analyze
                 </h1>
+                <div class="language-switch">
+                    <button id="en-btn" class="lang-btn active">EN</button>
+                    <button id="zh-btn" class="lang-btn">中文</button>
+                </div>
             </div>
         </header>
 
         <!-- Log上传区域 -->
         <section class="section">
             <div class="section-header">
-                <h2>
+                <h2 data-lang-key="upload_section_title">
                     <i class="fas fa-upload"></i>
                     上传Log文件
                 </h2>
             </div>
             <div class="log-upload-container">
                 <div class="log-upload-section">
-                    <h3>选择EVE Online战斗日志文件</h3>
+                    <h3 data-lang-key="select_log_file">选择EVE Online战斗日志文件</h3>
                     <div class="file-upload-area">
                         <input type="file" id="log-file" accept=".txt,.log" class="file-input">
                         <label for="log-file" class="file-label">
                             <i class="fas fa-cloud-upload-alt"></i>
-                            <span>点击或拖拽文件到此处</span>
+                            <span data-lang-key="drag_drop_here">点击或拖拽文件到此处</span>
                         </label>
                     </div>
                     <button id="analyze-log-btn" class="btn btn-primary" style="margin-top: 20px;">
                         <i class="fas fa-analytics"></i>
-                        分析Log
+                        <span data-lang-key="analyze_log">分析Log</span>
                     </button>
                 </div>
             </div>
@@ -49,7 +53,7 @@
         <!-- 分析结果 -->
         <section class="section" id="log-analysis-section" style="display: none;">
             <div class="section-header">
-                <h2>
+                <h2 data-lang-key="analysis_results">
                     <i class="fas fa-chart-pie"></i>
                     分析结果
                 </h2>
@@ -57,23 +61,23 @@
             <div class="analysis-summary">
                 <div class="summary-card">
                     <div class="summary-item">
-                        <span class="summary-label">总DPS</span>
+                        <span class="summary-label" data-lang-key="total_dps">总DPS</span>
                         <span class="summary-value" id="total-dps">0</span>
                     </div>
                     <div class="summary-item">
-                        <span class="summary-label">总维修量</span>
+                        <span class="summary-label" data-lang-key="total_repair">总维修量</span>
                         <span class="summary-value" id="total-repair">0</span>
                     </div>
                     <div class="summary-item">
-                        <span class="summary-label">总接收维修量</span>
+                        <span class="summary-label" data-lang-key="total_received_repair">总接收维修量</span>
                         <span class="summary-value" id="total-received-repair">0</span>
                     </div>
                     <div class="summary-item">
-                        <span class="summary-label">战斗开始时间</span>
+                        <span class="summary-label" data-lang-key="combat_start_time">战斗开始时间</span>
                         <span class="summary-value" id="combat-start-time">-</span>
                     </div>
                     <div class="summary-item">
-                        <span class="summary-label">战斗ID</span>
+                        <span class="summary-label" data-lang-key="combat_id">战斗ID</span>
                         <span class="summary-value" id="combat-id">-</span>
                     </div>
                 </div>
@@ -90,7 +94,7 @@
             
             <!-- 战斗回放 -->
             <div class="section-header" style="margin-top: 40px;">
-                <h2>
+                <h2 data-lang-key="combat_replay">
                     <i class="fas fa-play-circle"></i>
                     战斗回放
                 </h2>

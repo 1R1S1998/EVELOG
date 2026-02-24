@@ -1,5 +1,56 @@
 // 全局变量
 let currentLogFile = null;
+let currentLanguage = 'en'; // 默认语言为英文
+
+// 语言翻译对象
+const translations = {
+    en: {
+        upload_section_title: 'Upload Log File',
+        select_log_file: 'Select EVE Online Combat Log File',
+        drag_drop_here: 'Click or drag file here',
+        analyze_log: 'Analyze Log',
+        analysis_results: 'Analysis Results',
+        total_dps: 'Total DPS',
+        total_repair: 'Total Repair',
+        total_received_repair: 'Total Received Repair',
+        combat_start_time: 'Combat Start Time',
+        combat_id: 'Combat ID',
+        combat_replay: 'Combat Replay',
+        dealing_damage: 'Dealing Damage',
+        performing_repair: 'Performing Repair',
+        receiving_repair: 'Receiving Repair',
+        target: 'Target',
+        analyzing: 'Analyzing...',
+        log_analyzed: 'Log analysis completed!',
+        valid_data_found: 'Found valid data in',
+        lines: 'lines',
+        please_select_file: 'Please select a Log file first',
+        analysis_failed: 'Failed to analyze Log file: '
+    },
+    zh: {
+        upload_section_title: '上传Log文件',
+        select_log_file: '选择EVE Online战斗日志文件',
+        drag_drop_here: '点击或拖拽文件到此处',
+        analyze_log: '分析Log',
+        analysis_results: '分析结果',
+        total_dps: '总DPS',
+        total_repair: '总维修量',
+        total_received_repair: '总接收维修量',
+        combat_start_time: '战斗开始时间',
+        combat_id: '战斗ID',
+        combat_replay: '战斗回放',
+        dealing_damage: '造成伤害',
+        performing_repair: '进行维修',
+        receiving_repair: '接收维修',
+        target: '目标',
+        analyzing: '分析中...',
+        log_analyzed: 'Log分析完成！',
+        valid_data_found: '已经识别到',
+        lines: '行里有有效数据',
+        please_select_file: '请先选择一个Log文件',
+        analysis_failed: '分析Log文件失败: '
+    }
+};
 
 // 图表实例
 let dpsChart = null;
@@ -22,6 +73,11 @@ const errorText = document.getElementById('error-text');
 // 显示加载指示器
 function showLoading() {
     loading.classList.remove('hidden');
+    // 更新加载文本
+    const loadingText = document.querySelector('.loading-text');
+    if (loadingText) {
+        loadingText.textContent = translations[currentLanguage].analyzing;
+    }
 }
 
 // 隐藏加载指示器
@@ -43,6 +99,65 @@ function showError(message) {
 // 隐藏错误信息
 function hideError() {
     errorMessage.classList.add('hidden');
+}
+
+// 切换语言
+function switchLanguage(lang) {
+    currentLanguage = lang;
+    
+    // 更新语言按钮状态
+    document.getElementById('en-btn').classList.toggle('active', lang === 'en');
+    document.getElementById('zh-btn').classList.toggle('active', lang === 'zh');
+    
+    // 更新页面文本
+    updatePageText();
+    
+    // 更新图表标题
+    if (dpsChart) {
+        renderDpsChart(window.currentAnalysisData);
+    }
+    if (repairChart) {
+        renderRepairChart(window.currentAnalysisData);
+    }
+    if (window.receivedRepairChart) {
+        renderReceivedRepairChart(window.currentAnalysisData);
+    }
+}
+
+// 更新页面文本
+function updatePageText() {
+    // 遍历所有带有data-lang-key属性的元素
+    document.querySelectorAll('[data-lang-key]').forEach(element => {
+        const key = element.getAttribute('data-lang-key');
+        if (translations[currentLanguage][key]) {
+            element.textContent = translations[currentLanguage][key];
+        }
+    });
+    
+    // 更新标题
+    document.title = currentLanguage === 'en' ? 'EVE Online Log Analyze' : 'EVE Online Log分析系统';
+    
+    // 更新页面主标题
+    const titleElement = document.querySelector('.title');
+    if (titleElement) {
+        titleElement.innerHTML = `<i class="fas fa-file-alt"></i> ${currentLanguage === 'en' ? 'EVE Online Log Analyze' : 'EVE Online Log分析系统'}`;
+    }
+}
+
+// 初始化语言切换功能
+function initLanguageSwitch() {
+    // 英文按钮
+    document.getElementById('en-btn').addEventListener('click', () => {
+        switchLanguage('en');
+    });
+    
+    // 中文按钮
+    document.getElementById('zh-btn').addEventListener('click', () => {
+        switchLanguage('zh');
+    });
+    
+    // 初始加载时更新页面文本
+    updatePageText();
 }
 
 // 更新文件上传区域显示
@@ -517,7 +632,7 @@ function renderDpsChart(data) {
         data: {
             labels: targets,
             datasets: [{
-                label: 'DPS对目标造成的伤害',
+                label: currentLanguage === 'en' ? 'DPS Damage to Targets' : 'DPS对目标造成的伤害',
                 data: values,
                 backgroundColor: 'rgba(231, 76, 60, 0.7)',
                 borderColor: 'rgba(231, 76, 60, 1)',
@@ -533,7 +648,7 @@ function renderDpsChart(data) {
                 },
                 title: {
                     display: true,
-                    text: 'DPS对各目标造成的伤害'
+                    text: currentLanguage === 'en' ? 'DPS Damage to Each Target' : 'DPS对各目标造成的伤害'
                 }
             },
             scales: {
@@ -541,7 +656,7 @@ function renderDpsChart(data) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: '伤害值'
+                        text: currentLanguage === 'en' ? 'Damage Value' : '伤害值'
                     }
                 }
             }
@@ -564,7 +679,7 @@ function renderRepairChart(data) {
         data: {
             labels: targets,
             datasets: [{
-                label: '维修量对目标的修复',
+                label: currentLanguage === 'en' ? 'Repair to Targets' : '维修量对目标的修复',
                 data: values,
                 backgroundColor: 'rgba(80, 200, 120, 0.7)',
                 borderColor: 'rgba(80, 200, 120, 1)',
@@ -580,7 +695,7 @@ function renderRepairChart(data) {
                 },
                 title: {
                     display: true,
-                    text: '维修量对各目标的修复'
+                    text: currentLanguage === 'en' ? 'Repair to Each Target' : '维修量对各目标的修复'
                 }
             },
             scales: {
@@ -588,7 +703,7 @@ function renderRepairChart(data) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: '维修值'
+                        text: currentLanguage === 'en' ? 'Repair Value' : '维修值'
                     }
                 }
             }
@@ -615,7 +730,7 @@ function renderReceivedRepairChart(data) {
         data: {
             labels: sources,
             datasets: [{
-                label: '接收的维修量',
+                label: currentLanguage === 'en' ? 'Received Repair' : '接收的维修量',
                 data: values,
                 backgroundColor: 'rgba(100, 149, 237, 0.7)',
                 borderColor: 'rgba(100, 149, 237, 1)',
@@ -631,7 +746,7 @@ function renderReceivedRepairChart(data) {
                 },
                 title: {
                     display: true,
-                    text: '从各来源接收的维修量'
+                    text: currentLanguage === 'en' ? 'Received Repair from Each Source' : '从各来源接收的维修量'
                 }
             },
             scales: {
@@ -639,7 +754,7 @@ function renderReceivedRepairChart(data) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: '维修值'
+                        text: currentLanguage === 'en' ? 'Repair Value' : '维修值'
                     }
                 }
             }
@@ -665,13 +780,13 @@ function renderCombatReplay(data) {
         let eventTypeText = '';
         switch (event.type) {
             case 'DAMAGE':
-                eventTypeText = '造成伤害';
+                eventTypeText = currentLanguage === 'en' ? translations[currentLanguage].dealing_damage : translations[currentLanguage].dealing_damage;
                 break;
             case 'REPAIR':
-                eventTypeText = '进行维修';
+                eventTypeText = currentLanguage === 'en' ? translations[currentLanguage].performing_repair : translations[currentLanguage].performing_repair;
                 break;
             case 'RECEIVED_REPAIR':
-                eventTypeText = '接收维修';
+                eventTypeText = currentLanguage === 'en' ? translations[currentLanguage].receiving_repair : translations[currentLanguage].receiving_repair;
                 break;
         }
         
@@ -682,7 +797,7 @@ function renderCombatReplay(data) {
                 <span class="event-value ${event.type.toLowerCase()}">${event.value}</span>
             </div>
             <div class="event-target">
-                目标: ${event.target}
+                ${currentLanguage === 'en' ? translations[currentLanguage].target : translations[currentLanguage].target}: ${event.target}
             </div>
         `;
         
@@ -693,7 +808,7 @@ function renderCombatReplay(data) {
 // 分析Log文件
 async function analyzeLog() {
     if (!currentLogFile) {
-        showError('请先选择一个Log文件');
+        showError(translations[currentLanguage].please_select_file);
         return;
     }
 
@@ -702,6 +817,9 @@ async function analyzeLog() {
 
     try {
         const data = await parseLogFile(currentLogFile);
+        
+        // 存储分析数据，用于语言切换时更新图表
+        window.currentAnalysisData = data;
         
         // 更新汇总信息
         totalDpsEl.textContent = data.totalDps;
@@ -732,13 +850,13 @@ async function analyzeLog() {
         logAnalysisSection.style.display = 'block';
 
         // 显示处理结果反馈
-        let message = `Log分析完成！`;
+        let message = translations[currentLanguage].log_analyzed;
         if (data.processedLines > 0) {
-            message += ` 已经识别到 ${data.processedLines} 行里有有效数据`;
+            message += ` ${translations[currentLanguage].valid_data_found} ${data.processedLines} ${translations[currentLanguage].lines}`;
         }
         showError(message);
     } catch (error) {
-        showError('分析Log文件失败: ' + error.message);
+        showError(translations[currentLanguage].analysis_failed + error.message);
     } finally {
         hideLoading();
     }
@@ -750,6 +868,9 @@ function initEventListeners() {
     if (analyzeLogBtn) {
         analyzeLogBtn.addEventListener('click', analyzeLog);
     }
+    
+    // 初始化语言切换功能
+    initLanguageSwitch();
 }
 
 // 初始化页面
