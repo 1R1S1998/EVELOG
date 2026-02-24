@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE Online Log Analyze</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/css/chart.min.css">
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <i class="fas fa-file-alt"></i>
+                    EVE Online Log Analyze
+                </h1>
+            </div>
+        </header>
+
+        <!-- Log上传区域 -->
+        <section class="section">
+            <div class="section-header">
+                <h2>
+                    <i class="fas fa-upload"></i>
+                    上传Log文件
+                </h2>
+            </div>
+            <div class="log-upload-container">
+                <div class="log-upload-section">
+                    <h3>选择EVE Online战斗日志文件</h3>
+                    <div class="file-upload-area">
+                        <input type="file" id="log-file" accept=".txt,.log" class="file-input">
+                        <label for="log-file" class="file-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>点击或拖拽文件到此处</span>
+                        </label>
+                    </div>
+                    <button id="analyze-log-btn" class="btn btn-primary" style="margin-top: 20px;">
+                        <i class="fas fa-analytics"></i>
+                        分析Log
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 分析结果 -->
+        <section class="section" id="log-analysis-section" style="display: none;">
+            <div class="section-header">
+                <h2>
+                    <i class="fas fa-chart-pie"></i>
+                    分析结果
+                </h2>
+            </div>
+            <div class="analysis-summary">
+                <div class="summary-card">
+                    <div class="summary-item">
+                        <span class="summary-label">总DPS</span>
+                        <span class="summary-value" id="total-dps">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">总维修量</span>
+                        <span class="summary-value" id="total-repair">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">战斗开始时间</span>
+                        <span class="summary-value" id="combat-start-time">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">战斗ID</span>
+                        <span class="summary-value" id="combat-id">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="dps-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="repair-chart"></canvas>
+            </div>
+            
+            <!-- 战斗回放 -->
+            <div class="section-header" style="margin-top: 40px;">
+                <h2>
+                    <i class="fas fa-play-circle"></i>
+                    战斗回放
+                </h2>
+            </div>
+            <div class="combat-replay">
+                <div id="combat-events" class="combat-events">
+                    <!-- 战斗事件将在这里动态生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 加载指示器 -->
+        <div id="loading" class="loading hidden">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">分析中...</div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="error-message" class="error-message hidden">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="error-text"></span>
+        </div>
+    </div>
+
+    <!-- 图表库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- JavaScript -->
+    <script src="static/js/app.js"></script>
+</body>
+</html>
