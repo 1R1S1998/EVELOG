@@ -1,39 +1,16 @@
 {
-  "name": "eve-log-analyzer-app",
+  "name": "eve-log-analyzer",
   "version": "1.0.0",
-  "description": "EVE Online Log Analyzer Desktop Application",
+  "description": "EVE Online Log Analyzer Web Application",
   "homepage": "https://github.com/1R1S1998/EVELOG",
-  "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder",
     "vercel-build": "echo 'Static build for Vercel'"
   },
   "keywords": [
-    "electron",
     "eve-online",
-    "log-analyzer"
+    "log-analyzer",
+    "web-application"
   ],
   "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.6.0"
-  },
-  "build": {
-    "appId": "com.eveloganalyzer.app",
-    "productName": "EVE Log Analyzer",
-    "win": {
-      "target": "nsis",
-      "icon": "build/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "build/icon.icns"
-    },
-    "linux": {
-      "target": "deb",
-      "icon": "build/icon.png"
-    }
-  }
+  "license": "MIT"
 }

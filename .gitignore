@@ -38,6 +38,4 @@ temp/
 __pycache__/
 *.pyc
 
-# Electron build files
-electron-build/
-*.exe
+
