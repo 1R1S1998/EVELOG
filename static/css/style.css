@@ -442,13 +442,14 @@ body::before {
 .summary-item {
     text-align: center;
     position: relative;
-    padding: 20px;
+    padding: 16px;
     border-radius: 12px;
     background: rgba(41, 51, 71, 0.8);
     border: 1px solid rgba(99, 102, 241, 0.15);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+    min-height: 120px;
 }
 
 .summary-item::before {
@@ -471,17 +472,17 @@ body::before {
 
 .summary-label {
     display: block;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #94a3b8;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
+    letter-spacing: 1px;
 }
 
 .summary-value {
     display: block;
-    font-size: 2.2rem;
+    font-size: 1.8rem;
     font-weight: 800;
     color: #f8fafc;
     text-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
