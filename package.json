@@ -2,6 +2,7 @@
   "name": "eve-log-analyzer-app",
   "version": "1.0.0",
   "description": "EVE Online Log Analyzer Desktop Application",
+  "homepage": "https://github.com/1R1S1998/EVELOG",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
