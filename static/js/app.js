@@ -679,7 +679,7 @@ function renderRepairChart(data) {
         data: {
             labels: targets,
             datasets: [{
-                label: currentLanguage === 'en' ? 'Repair to Targets' : '维修量对目标的修复',
+                label: currentLanguage === 'en' ? 'Repair to Targets' : '对目标维修量',
                 data: values,
                 backgroundColor: 'rgba(80, 200, 120, 0.7)',
                 borderColor: 'rgba(80, 200, 120, 1)',
@@ -695,7 +695,7 @@ function renderRepairChart(data) {
                 },
                 title: {
                     display: true,
-                    text: currentLanguage === 'en' ? 'Repair to Each Target' : '维修量对各目标的修复'
+                    text: currentLanguage === 'en' ? 'Repair to Each Target' : '对目标维修量'
                 }
             },
             scales: {
