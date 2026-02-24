@@ -6,7 +6,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "vercel-build": "echo 'Static build for Vercel'"
   },
   "keywords": [
     "electron",
