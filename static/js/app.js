@@ -118,13 +118,16 @@ function analyzeLogData(lines) {
     const data = {
         totalDps: 0,
         totalRepair: 0,
+        totalReceivedRepair: 0,
         dpsByTarget: {},
         repairByTarget: {},
+        receivedRepairBySource: {},
         processedLines: 0,
         unrecognizedLines: 0,
         events: [], // 用于战斗回放
         damageEvents: [], // 用于DPS计算
         repairEvents: [], // 用于HPS计算
+        receivedRepairEvents: [], // 用于接收维修计算
         combatStartTime: null, // 战斗开始时间
         combatId: null // 战斗ID
     };
@@ -234,120 +237,183 @@ function analyzeLogData(lines) {
                 }
             }
         } else if (line.includes('color=0xffccff66')) {
-            // 浅绿色：用户的后勤维修量
-            eventType = 'REPAIR';
-            eventSubtype = 'OUT_Repair';
-            
-            // 提取维修值
-            match = line.match(/<b>(\d+)<\/b>/);
-            if (match) {
-                value = parseInt(match[1]);
+            // 检查是维修量至（发出的维修）还是维修量由（接收的维修）
+            if (line.includes('远程装甲维修量至')) {
+                // 浅绿色：用户的后勤维修量（发出的维修）
+                eventType = 'REPAIR';
+                eventSubtype = 'OUT_Repair';
                 
-                // 提取目标
-                let pilotName = null;
-                let shipType = null;
-                
-                // 提取舰船类型（优先匹配带localized标签的）
-                const shipMatch = line.match(/<localized hint="[^"]+">([^<]+)<\/localized>/);
-                if (shipMatch) {
-                    shipType = shipMatch[1].trim();
-                    // 移除末尾的星号
-                    shipType = shipType.replace(/\*$/, '');
-                } else {
-                    // 尝试其他模式
-                    const shipPatterns = [
-                        /<color=0xFFFFCC66>\s*<u><b>([^<]+)<\/b><\/u><\/color>/,
-                        /<u><b>([^<]+)<\/b><\/u>/,
-                        /<font size=14><color=0xFFFFCC66>\s*<u><b>([^<]+)<\/b><\/u><\/color><\/font>/,
-                        /<font size=14><color=0xFFFFCC66>\s*<u><b><localized hint="[^"]+">([^<]+)<\/localized><\/b><\/u><\/color><\/font>/
-                    ];
+                // 提取维修值
+                match = line.match(/<b>(\d+)<\/b>/);
+                if (match) {
+                    value = parseInt(match[1]);
                     
-                    for (const pattern of shipPatterns) {
-                        match = line.match(pattern);
-                        if (match) {
-                            shipType = match[1].trim();
-                            // 移除末尾的星号
-                            shipType = shipType.replace(/\*$/, '');
-                            break;
+                    // 提取目标
+                    let pilotName = null;
+                    let shipType = null;
+                    
+                    // 提取舰船类型（优先匹配带localized标签的）
+                    const shipMatch = line.match(/<localized hint="[^"]+">([^<]+)<\/localized>/);
+                    if (shipMatch) {
+                        shipType = shipMatch[1].trim();
+                        // 移除末尾的星号
+                        shipType = shipType.replace(/\*$/, '');
+                    } else {
+                        // 尝试其他模式
+                        const shipPatterns = [
+                            /<color=0xFFFFCC66>\s*<u><b>([^<]+)<\/b><\/u><\/color>/,
+                            /<u><b>([^<]+)<\/b><\/u>/,
+                            /<font size=14><color=0xFFFFCC66>\s*<u><b>([^<]+)<\/b><\/u><\/color><\/font>/,
+                            /<font size=14><color=0xFFFFCC66>\s*<u><b><localized hint="[^"]+">([^<]+)<\/localized><\/b><\/u><\/color><\/font>/
+                        ];
+                        
+                        for (const pattern of shipPatterns) {
+                            match = line.match(pattern);
+                            if (match) {
+                                shipType = match[1].trim();
+                                // 移除末尾的星号
+                                shipType = shipType.replace(/\*$/, '');
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 如果上面的方法都没找到，尝试从完整目标字符串中提取
+                    if (!shipType) {
+                        const fullTargetMatch = line.match(/<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/);
+                        if (fullTargetMatch) {
+                            const fullTarget = fullTargetMatch[1];
+                            // 尝试从括号中提取舰船类型
+                            const shipTypeMatch = fullTarget.match(/\(([^)]+\*?)\)/);
+                            if (shipTypeMatch) {
+                                shipType = shipTypeMatch[1].trim();
+                                shipType = shipType.replace(/\*$/, '');
+                            }
+                        }
+                    }
+                    
+                    // 提取飞行员名称（优先匹配带颜色标签的）
+                    const pilotMatch = line.match(/<font size=12><color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color><\/font>/);
+                    if (pilotMatch) {
+                        pilotName = pilotMatch[1].trim();
+                    } else {
+                        // 尝试其他模式
+                        const pilotPatterns = [
+                            /<color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color>/,
+                            /<b>([^<]+)<\/b>\s*-/,
+                            /远程装甲维修量至[\s\S]*? - ([^-]+) -/,
+                            /至[\s\S]*? - ([^-]+) -/
+                        ];
+                        
+                        for (const pattern of pilotPatterns) {
+                            match = line.match(pattern);
+                            if (match) {
+                                pilotName = match[1].trim();
+                                // 移除末尾的空格和特殊字符
+                                pilotName = pilotName.replace(/\s*$/, '');
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 构建目标名称
+                    if (pilotName && shipType) {
+                        // 移除任何HTML标签
+                        pilotName = pilotName.replace(/<[^>]+>/g, '').trim();
+                        shipType = shipType.replace(/<[^>]+>/g, '').trim();
+                        target = `${pilotName}（${shipType}）`;
+                    } else if (pilotName) {
+                        // 移除任何HTML标签
+                        pilotName = pilotName.replace(/<[^>]+>/g, '').trim();
+                        target = pilotName;
+                    } else if (shipType) {
+                        // 移除任何HTML标签
+                        shipType = shipType.replace(/<[^>]+>/g, '').trim();
+                        target = shipType;
+                    } else {
+                        // 尝试通用模式
+                        const generalPatterns = [
+                            /远程装甲维修量至[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
+                            /远程装甲维修量至[\s\S]*?<b>([\s\S]*?)<\/b>/,
+                            /维修[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
+                            /维修[\s\S]*?<b>([\s\S]*?)<\/b>/,
+                            /至[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
+                            /至[\s\S]*?<b>([\s\S]*?)<\/b>/
+                        ];
+                        
+                        for (const pattern of generalPatterns) {
+                            match = line.match(pattern);
+                            if (match) {
+                                target = match[1].trim();
+                                // 移除任何HTML标签
+                                target = target.replace(/<[^>]+>/g, '').trim();
+                                break;
+                            }
+                        }
+                        
+                        if (!target) {
+                            target = 'Fleet Member';
                         }
                     }
                 }
+            } else if (line.includes('远程装甲维修量由')) {
+                // 浅绿色：用户接收的维修量
+                eventType = 'RECEIVED_REPAIR';
+                eventSubtype = 'IN_Repair';
                 
-                // 如果上面的方法都没找到，尝试从完整目标字符串中提取
-                if (!shipType) {
-                    const fullTargetMatch = line.match(/<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/);
-                    if (fullTargetMatch) {
-                        const fullTarget = fullTargetMatch[1];
-                        // 尝试从括号中提取舰船类型
-                        const shipTypeMatch = fullTarget.match(/\(([^)]+\*?)\)/);
-                        if (shipTypeMatch) {
-                            shipType = shipTypeMatch[1].trim();
-                            shipType = shipType.replace(/\*$/, '');
-                        }
-                    }
-                }
-                
-                // 提取飞行员名称（优先匹配带颜色标签的）
-                const pilotMatch = line.match(/<font size=12><color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color><\/font>/);
-                if (pilotMatch) {
-                    pilotName = pilotMatch[1].trim();
-                } else {
-                    // 尝试其他模式
-                    const pilotPatterns = [
-                        /<color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color>/,
-                        /<b>([^<]+)<\/b>\s*-/,
-                        /远程装甲维修量至[\s\S]*? - ([^-]+) -/,
-                        /至[\s\S]*? - ([^-]+) -/
-                    ];
+                // 提取维修值
+                match = line.match(/<b>(\d+)<\/b>/);
+                if (match) {
+                    value = parseInt(match[1]);
                     
-                    for (const pattern of pilotPatterns) {
-                        match = line.match(pattern);
-                        if (match) {
-                            pilotName = match[1].trim();
-                            // 移除末尾的空格和特殊字符
-                            pilotName = pilotName.replace(/\s*$/, '');
-                            break;
-                        }
-                    }
-                }
-                
-                // 构建目标名称
-                if (pilotName && shipType) {
-                    // 移除任何HTML标签
-                    pilotName = pilotName.replace(/<[^>]+>/g, '').trim();
-                    shipType = shipType.replace(/<[^>]+>/g, '').trim();
-                    target = `${pilotName}（${shipType}）`;
-                } else if (pilotName) {
-                    // 移除任何HTML标签
-                    pilotName = pilotName.replace(/<[^>]+>/g, '').trim();
-                    target = pilotName;
-                } else if (shipType) {
-                    // 移除任何HTML标签
-                    shipType = shipType.replace(/<[^>]+>/g, '').trim();
-                    target = shipType;
-                } else {
-                    // 尝试通用模式
-                    const generalPatterns = [
-                        /远程装甲维修量至[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                        /远程装甲维修量至[\s\S]*?<b>([\s\S]*?)<\/b>/,
-                        /维修[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                        /维修[\s\S]*?<b>([\s\S]*?)<\/b>/,
-                        /至[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                        /至[\s\S]*?<b>([\s\S]*?)<\/b>/
-                    ];
+                    // 提取来源
+                    let sourceName = null;
+                    let shipType = null;
                     
-                    for (const pattern of generalPatterns) {
-                        match = line.match(pattern);
-                        if (match) {
-                            target = match[1].trim();
-                            // 移除任何HTML标签
-                            target = target.replace(/<[^>]+>/g, '').trim();
-                            break;
+                    // 提取飞行员名称（优先匹配带颜色标签的）
+                    const sourceMatch = line.match(/<font size=12><color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color><\/font>/);
+                    if (sourceMatch) {
+                        sourceName = sourceMatch[1].trim();
+                    } else {
+                        // 尝试其他模式
+                        const sourcePatterns = [
+                            /<color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color>/,
+                            /<b>([^<]+)<\/b>\s*-/,
+                            /远程装甲维修量由[\s\S]*? - ([^-]+) -/,
+                            /由[\s\S]*? - ([^-]+) -/
+                        ];
+                        
+                        for (const pattern of sourcePatterns) {
+                            match = line.match(pattern);
+                            if (match) {
+                                sourceName = match[1].trim();
+                                // 移除末尾的空格和特殊字符
+                                sourceName = sourceName.replace(/\s*$/, '');
+                                break;
+                            }
                         }
                     }
                     
-                    if (!target) {
-                        target = 'Fleet Member';
+                    // 提取舰船类型（如果有）
+                    const shipMatch = line.match(/<localized hint="[^"]+">([^<]+)<\/localized>/);
+                    if (shipMatch) {
+                        shipType = shipMatch[1].trim();
+                        // 移除末尾的星号
+                        shipType = shipType.replace(/\*$/, '');
+                    }
+                    
+                    // 构建来源名称
+                    if (sourceName && shipType) {
+                        // 移除任何HTML标签
+                        sourceName = sourceName.replace(/<[^>]+>/g, '').trim();
+                        shipType = shipType.replace(/<[^>]+>/g, '').trim();
+                        target = `${sourceName}（${shipType}）`;
+                    } else if (sourceName) {
+                        // 移除任何HTML标签
+                        sourceName = sourceName.replace(/<[^>]+>/g, '').trim();
+                        target = sourceName;
+                    } else {
+                        target = 'Unknown Source';
                     }
                 }
             }
@@ -411,6 +477,18 @@ function analyzeLogData(lines) {
                     data.repairByTarget[target] += value;
                     // 记录维修事件用于HPS计算
                     data.repairEvents.push({
+                        timestamp: timestamp,
+                        value: value
+                    });
+                    break;
+                case 'RECEIVED_REPAIR':
+                    data.totalReceivedRepair += value;
+                    if (!data.receivedRepairBySource[target]) {
+                        data.receivedRepairBySource[target] = 0;
+                    }
+                    data.receivedRepairBySource[target] += value;
+                    // 记录接收维修事件
+                    data.receivedRepairEvents.push({
                         timestamp: timestamp,
                         value: value
                     });
@@ -518,6 +596,57 @@ function renderRepairChart(data) {
     });
 }
 
+// 渲染接收维修图表
+function renderReceivedRepairChart(data) {
+    const receivedRepairChartCanvas = document.getElementById('received-repair-chart');
+    if (!receivedRepairChartCanvas) return;
+
+    let receivedRepairChart = null;
+    if (window.receivedRepairChart) {
+        window.receivedRepairChart.destroy();
+    }
+
+    const sources = Object.keys(data.receivedRepairBySource);
+    const values = sources.map(source => data.receivedRepairBySource[source]);
+
+    const ctx = receivedRepairChartCanvas.getContext('2d');
+    window.receivedRepairChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sources,
+            datasets: [{
+                label: '接收的维修量',
+                data: values,
+                backgroundColor: 'rgba(100, 149, 237, 0.7)',
+                borderColor: 'rgba(100, 149, 237, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: '从各来源接收的维修量'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '维修值'
+                    }
+                }
+            }
+        }
+    });
+}
+
 
 
 // 渲染战斗回放
@@ -540,6 +669,9 @@ function renderCombatReplay(data) {
                 break;
             case 'REPAIR':
                 eventTypeText = '进行维修';
+                break;
+            case 'RECEIVED_REPAIR':
+                eventTypeText = '接收维修';
                 break;
         }
         
@@ -575,6 +707,12 @@ async function analyzeLog() {
         totalDpsEl.textContent = data.totalDps;
         totalRepairEl.textContent = data.totalRepair;
         
+        // 更新总接收维修量
+        const totalReceivedRepairEl = document.getElementById('total-received-repair');
+        if (totalReceivedRepairEl) {
+            totalReceivedRepairEl.textContent = data.totalReceivedRepair;
+        }
+        
         // 更新战斗时间和战斗ID
         const combatStartTimeEl = document.getElementById('combat-start-time');
         const combatIdEl = document.getElementById('combat-id');
@@ -585,6 +723,7 @@ async function analyzeLog() {
         // 渲染图表
         renderDpsChart(data);
         renderRepairChart(data);
+        renderReceivedRepairChart(data);
         
         // 渲染战斗回放
         renderCombatReplay(data);

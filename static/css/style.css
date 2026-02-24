@@ -722,6 +722,10 @@ body::before {
     background: linear-gradient(180deg, #10b981, #059669);
 }
 
+.combat-event.received_repair::before {
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+}
+
 .combat-event:hover {
     transform: translateX(8px);
     box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
@@ -762,6 +766,11 @@ body::before {
 .event-value.repair {
     color: #10b981;
     text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.event-value.received_repair {
+    color: #3b82f6;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
 }
 
 .event-target {
