@@ -601,8 +601,8 @@ function analyzeLogData(lines) {
             }
         }
 
-        // 如果成功解析到事件类型、目标和数值
-        if (eventType && target && value) {
+        // 如果成功解析到事件类型、目标和数值（包括value为0的情况）
+        if (eventType && target !== undefined && value !== undefined) {
             data.processedLines++;
             
             // 记录事件用于战斗回放
