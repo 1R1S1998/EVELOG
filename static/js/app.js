@@ -15,7 +15,12 @@ const translations = {
         total_received_repair: 'Total Received Repair',
         combat_start_time: 'Combat Start Time',
         combat_id: 'Combat ID',
-        glance_rate: 'Glance Rate',
+        total_attacks: 'Total Attacks',
+        glancing_hits: 'Glancing Hits',
+        normal_hits: 'Normal Hits',
+        penetration_hits: 'Penetration Hits',
+        critical_hits: 'Critical Hits',
+        misses: 'Misses',
         combat_replay: 'Combat Replay',
         dealing_damage: 'Dealing Damage',
         performing_repair: 'Performing Repair',
@@ -39,7 +44,12 @@ const translations = {
         total_received_repair: '总接收维修量',
         combat_start_time: '战斗开始时间',
         combat_id: '战斗ID',
-        glance_rate: '擦过概率',
+        total_attacks: '总攻击次数',
+        glancing_hits: '轻轻擦过',
+        normal_hits: '命中',
+        penetration_hits: '穿透',
+        critical_hits: '强力一击',
+        misses: '完全没有打中',
         combat_replay: '战斗回放',
         dealing_damage: '造成伤害',
         performing_repair: '进行维修',
@@ -247,9 +257,21 @@ function analyzeLogData(lines) {
         receivedRepairEvents: [], // 用于接收维修计算
         combatStartTime: null, // 战斗开始时间
         combatId: null, // 战斗ID
-        totalHits: 0, // 总命中次数
-        totalGlances: 0, // 总擦过次数
-        glanceRate: 0 // 擦过概率
+        hitStats: {
+            total: 0, // 总攻击次数
+            glancing: 0, // 轻轻擦过
+            hit: 0, // 命中
+            penetration: 0, // 穿透
+            critical: 0, // 强力一击
+            miss: 0 // 完全没有打中
+        },
+        hitRates: {
+            glancing: 0, // 轻轻擦过概率
+            hit: 0, // 命中概率
+            penetration: 0, // 穿透概率
+            critical: 0, // 强力一击概率
+            miss: 0 // 完全没有打中概率
+        }
     };
 
     lines.forEach(line => {
@@ -588,11 +610,23 @@ function analyzeLogData(lines) {
                         timestamp: timestamp,
                         value: value
                     });
-                    // 统计命中次数
-                    data.totalHits++;
-                    // 检测是否为擦过（通常擦过会有特定的文本标识）
-                    if (line.includes('擦过') || line.includes('glance')) {
-                        data.totalGlances++;
+                    // 统计攻击次数和命中类型
+                    data.hitStats.total++;
+                    
+                    // 检测命中类型
+                    if (line.includes('轻轻擦过') || line.includes('glancing')) {
+                        data.hitStats.glancing++;
+                    } else if (line.includes('命中') || line.includes('hit')) {
+                        data.hitStats.hit++;
+                    } else if (line.includes('穿透') || line.includes('penetration')) {
+                        data.hitStats.penetration++;
+                    } else if (line.includes('强力一击') || line.includes('critical') || line.includes('strong')) {
+                        data.hitStats.critical++;
+                    } else if (line.includes('完全没有打中') || line.includes('miss') || line.includes('未命中')) {
+                        data.hitStats.miss++;
+                    } else {
+                        // 默认视为普通命中
+                        data.hitStats.hit++;
                     }
                     break;
                 case 'REPAIR':
@@ -625,11 +659,13 @@ function analyzeLogData(lines) {
         }
     });
 
-    // 计算擦过概率
-    if (data.totalHits > 0) {
-        data.glanceRate = (data.totalGlances / data.totalHits * 100).toFixed(2);
-    } else {
-        data.glanceRate = 0;
+    // 计算各种命中类型的概率
+    if (data.hitStats.total > 0) {
+        data.hitRates.glancing = (data.hitStats.glancing / data.hitStats.total * 100).toFixed(2);
+        data.hitRates.hit = (data.hitStats.hit / data.hitStats.total * 100).toFixed(2);
+        data.hitRates.penetration = (data.hitStats.penetration / data.hitStats.total * 100).toFixed(2);
+        data.hitRates.critical = (data.hitStats.critical / data.hitStats.total * 100).toFixed(2);
+        data.hitRates.miss = (data.hitStats.miss / data.hitStats.total * 100).toFixed(2);
     }
 
     return data;
@@ -861,11 +897,24 @@ async function analyzeLog() {
         // 更新战斗时间和战斗ID
         const combatStartTimeEl = document.getElementById('combat-start-time');
         const combatIdEl = document.getElementById('combat-id');
-        const glanceRateEl = document.getElementById('glance-rate');
+        
+        // 更新命中类型统计
+        const totalAttacksEl = document.getElementById('total-attacks');
+        const glancingHitsEl = document.getElementById('glancing-hits');
+        const normalHitsEl = document.getElementById('normal-hits');
+        const penetrationHitsEl = document.getElementById('penetration-hits');
+        const criticalHitsEl = document.getElementById('critical-hits');
+        const missesEl = document.getElementById('misses');
         
         combatStartTimeEl.textContent = data.combatStartTime || '-';
         combatIdEl.textContent = data.combatId || '-';
-        glanceRateEl.textContent = `${data.glanceRate}%`;
+        
+        totalAttacksEl.textContent = data.hitStats.total || 0;
+        glancingHitsEl.textContent = `${data.hitStats.glancing || 0} (${data.hitRates.glancing || 0}%)`;
+        normalHitsEl.textContent = `${data.hitStats.hit || 0} (${data.hitRates.hit || 0}%)`;
+        penetrationHitsEl.textContent = `${data.hitStats.penetration || 0} (${data.hitRates.penetration || 0}%)`;
+        criticalHitsEl.textContent = `${data.hitStats.critical || 0} (${data.hitRates.critical || 0}%)`;
+        missesEl.textContent = `${data.hitStats.miss || 0} (${data.hitRates.miss || 0}%)`;
 
         // 渲染图表
         renderDpsChart(data);
