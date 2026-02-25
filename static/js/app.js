@@ -601,6 +601,30 @@ function analyzeLogData(lines) {
             }
         }
 
+        // 处理"完全没有打中"的情况
+        if (!eventType && line.includes('完全没有打中')) {
+            // 提取时间戳
+            let timestampMatch = line.match(/\[\s*(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2})\s*\]/);
+            if (timestampMatch) {
+                timestamp = timestampMatch[1];
+            }
+            
+            // 设置事件类型为DAMAGE
+            eventType = 'DAMAGE';
+            eventSubtype = 'OUT_Damage';
+            
+            // 提取目标（从"完全没有打中"后面提取）
+            const targetMatch = line.match(/完全没有打中([^-]+)-/);
+            if (targetMatch) {
+                target = targetMatch[1].trim();
+            } else {
+                target = 'Unknown';
+            }
+            
+            // 设置伤害值为0
+            value = 0;
+        }
+
         // 如果成功解析到事件类型、目标和数值（包括value为0的情况）
         if (eventType && target !== undefined && value !== undefined) {
             data.processedLines++;
