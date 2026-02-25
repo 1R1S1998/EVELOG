@@ -15,6 +15,9 @@ const translations = {
         total_dps: 'Damage Amount',
         total_repair: 'Total Repair',
         total_received_repair: 'Total Received Repair',
+        total_repair_count: 'Total Repair Count',
+        zero_repair_count: 'Zero Repair Count',
+        average_repair_value: 'Average Repair Value',
         combat_start_time: 'Combat Start Time',
         combat_id: 'Combat ID',
         total_attacks: 'Total Attacks',
@@ -46,6 +49,9 @@ const translations = {
         total_dps: '伤害量',
         total_repair: '总维修量',
         total_received_repair: '总接收维修量',
+        total_repair_count: '总维修次数',
+        zero_repair_count: '维修量为0的次数',
+        average_repair_value: '平均每次维修值',
         combat_start_time: '战斗开始时间',
         combat_id: '战斗ID',
         total_attacks: '总攻击次数',
@@ -275,6 +281,12 @@ function analyzeLogData(lines) {
             penetration: 0, // 穿透概率
             critical: 0, // 强力一击概率
             miss: 0 // 完全没有打中概率
+        },
+        repairStats: {
+            totalRepairCount: 0, // 总维修次数
+            zeroRepairCount: 0, // 维修量为0的次数
+            zeroRepairRate: 0, // 维修量为0的概率
+            averageRepairValue: 0 // 平均每次维修值
         }
     };
 
@@ -644,6 +656,11 @@ function analyzeLogData(lines) {
                         timestamp: timestamp,
                         value: value
                     });
+                    // 统计维修次数和0值维修
+                    data.repairStats.totalRepairCount++;
+                    if (value === 0) {
+                        data.repairStats.zeroRepairCount++;
+                    }
                     break;
                 case 'RECEIVED_REPAIR':
                     data.totalReceivedRepair += value;
@@ -670,6 +687,12 @@ function analyzeLogData(lines) {
         data.hitRates.penetration = (data.hitStats.penetration / data.hitStats.total * 100).toFixed(2);
         data.hitRates.critical = (data.hitStats.critical / data.hitStats.total * 100).toFixed(2);
         data.hitRates.miss = (data.hitStats.miss / data.hitStats.total * 100).toFixed(2);
+    }
+
+    // 计算维修相关统计
+    if (data.repairStats.totalRepairCount > 0) {
+        data.repairStats.zeroRepairRate = (data.repairStats.zeroRepairCount / data.repairStats.totalRepairCount * 100).toFixed(2);
+        data.repairStats.averageRepairValue = (data.totalRepair / data.repairStats.totalRepairCount).toFixed(2);
     }
 
     return data;
@@ -910,6 +933,11 @@ async function analyzeLog() {
         const criticalHitsEl = document.getElementById('critical-hits');
         const missesEl = document.getElementById('misses');
         
+        // 更新维修统计
+        const totalRepairCountEl = document.getElementById('total-repair-count');
+        const zeroRepairCountEl = document.getElementById('zero-repair-count');
+        const averageRepairValueEl = document.getElementById('average-repair-value');
+        
         combatStartTimeEl.textContent = data.combatStartTime || '-';
         combatIdEl.textContent = data.combatId || '-';
         
@@ -919,6 +947,10 @@ async function analyzeLog() {
         penetrationHitsEl.textContent = `${data.hitStats.penetration || 0} (${data.hitRates.penetration || 0}%)`;
         criticalHitsEl.textContent = `${data.hitStats.critical || 0} (${data.hitRates.critical || 0}%)`;
         missesEl.textContent = `${data.hitStats.miss || 0} (${data.hitRates.miss || 0}%)`;
+        
+        totalRepairCountEl.textContent = data.repairStats.totalRepairCount || 0;
+        zeroRepairCountEl.textContent = `${data.repairStats.zeroRepairCount || 0} (${data.repairStats.zeroRepairRate || 0}%)`;
+        averageRepairValueEl.textContent = data.repairStats.averageRepairValue || 0;
 
         // 渲染图表
         renderDpsChart(data);
