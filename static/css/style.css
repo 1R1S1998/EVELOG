@@ -289,6 +289,18 @@ body::before {
     background-clip: text;
 }
 
+.analysis-summary h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    background: linear-gradient(90deg, #f8fafc, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 .section-header i {
     font-size: 2rem;
     color: #10b981;
