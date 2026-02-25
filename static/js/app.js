@@ -15,6 +15,7 @@ const translations = {
         total_received_repair: 'Total Received Repair',
         combat_start_time: 'Combat Start Time',
         combat_id: 'Combat ID',
+        glance_rate: 'Glance Rate',
         combat_replay: 'Combat Replay',
         dealing_damage: 'Dealing Damage',
         performing_repair: 'Performing Repair',
@@ -38,6 +39,7 @@ const translations = {
         total_received_repair: '总接收维修量',
         combat_start_time: '战斗开始时间',
         combat_id: '战斗ID',
+        glance_rate: '擦过概率',
         combat_replay: '战斗回放',
         dealing_damage: '造成伤害',
         performing_repair: '进行维修',
@@ -244,7 +246,10 @@ function analyzeLogData(lines) {
         repairEvents: [], // 用于HPS计算
         receivedRepairEvents: [], // 用于接收维修计算
         combatStartTime: null, // 战斗开始时间
-        combatId: null // 战斗ID
+        combatId: null, // 战斗ID
+        totalHits: 0, // 总命中次数
+        totalGlances: 0, // 总擦过次数
+        glanceRate: 0 // 擦过概率
     };
 
     lines.forEach(line => {
@@ -583,6 +588,12 @@ function analyzeLogData(lines) {
                         timestamp: timestamp,
                         value: value
                     });
+                    // 统计命中次数
+                    data.totalHits++;
+                    // 检测是否为擦过（通常擦过会有特定的文本标识）
+                    if (line.includes('擦过') || line.includes('glance')) {
+                        data.totalGlances++;
+                    }
                     break;
                 case 'REPAIR':
                     data.totalRepair += value;
@@ -614,6 +625,13 @@ function analyzeLogData(lines) {
         }
     });
 
+    // 计算擦过概率
+    if (data.totalHits > 0) {
+        data.glanceRate = (data.totalGlances / data.totalHits * 100).toFixed(2);
+    } else {
+        data.glanceRate = 0;
+    }
+
     return data;
 }
 
@@ -623,17 +641,20 @@ function renderDpsChart(data) {
         dpsChart.destroy();
     }
 
-    const targets = Object.keys(data.dpsByTarget);
-    const values = targets.map(target => data.dpsByTarget[target]);
+    // 对目标按伤害量从高到低排序
+    const sortedTargets = Object.entries(data.dpsByTarget)
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => entry[0]);
+    const sortedValues = sortedTargets.map(target => data.dpsByTarget[target]);
 
     const ctx = dpsChartCanvas.getContext('2d');
     dpsChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: targets,
+            labels: sortedTargets,
             datasets: [{
                 label: currentLanguage === 'en' ? 'DPS Damage to Targets' : 'DPS对目标造成的伤害',
-                data: values,
+                data: sortedValues,
                 backgroundColor: 'rgba(231, 76, 60, 0.7)',
                 borderColor: 'rgba(231, 76, 60, 1)',
                 borderWidth: 1
@@ -670,17 +691,20 @@ function renderRepairChart(data) {
         repairChart.destroy();
     }
 
-    const targets = Object.keys(data.repairByTarget);
-    const values = targets.map(target => data.repairByTarget[target]);
+    // 对目标按维修量从高到低排序
+    const sortedTargets = Object.entries(data.repairByTarget)
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => entry[0]);
+    const sortedValues = sortedTargets.map(target => data.repairByTarget[target]);
 
     const ctx = repairChartCanvas.getContext('2d');
     repairChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: targets,
+            labels: sortedTargets,
             datasets: [{
                 label: currentLanguage === 'en' ? 'Repair to Targets' : '对目标维修量',
-                data: values,
+                data: sortedValues,
                 backgroundColor: 'rgba(80, 200, 120, 0.7)',
                 borderColor: 'rgba(80, 200, 120, 1)',
                 borderWidth: 1
@@ -721,17 +745,20 @@ function renderReceivedRepairChart(data) {
         window.receivedRepairChart.destroy();
     }
 
-    const sources = Object.keys(data.receivedRepairBySource);
-    const values = sources.map(source => data.receivedRepairBySource[source]);
+    // 对来源按接收维修量从高到低排序
+    const sortedSources = Object.entries(data.receivedRepairBySource)
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => entry[0]);
+    const sortedValues = sortedSources.map(source => data.receivedRepairBySource[source]);
 
     const ctx = receivedRepairChartCanvas.getContext('2d');
     window.receivedRepairChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: sources,
+            labels: sortedSources,
             datasets: [{
                 label: currentLanguage === 'en' ? 'Received Repair' : '接收的维修量',
-                data: values,
+                data: sortedValues,
                 backgroundColor: 'rgba(100, 149, 237, 0.7)',
                 borderColor: 'rgba(100, 149, 237, 1)',
                 borderWidth: 1
@@ -834,9 +861,11 @@ async function analyzeLog() {
         // 更新战斗时间和战斗ID
         const combatStartTimeEl = document.getElementById('combat-start-time');
         const combatIdEl = document.getElementById('combat-id');
+        const glanceRateEl = document.getElementById('glance-rate');
         
         combatStartTimeEl.textContent = data.combatStartTime || '-';
         combatIdEl.textContent = data.combatId || '-';
+        glanceRateEl.textContent = `${data.glanceRate}%`;
 
         // 渲染图表
         renderDpsChart(data);
