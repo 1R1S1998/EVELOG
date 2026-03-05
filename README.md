@@ -19,39 +19,6 @@
 - **图标库**: Font Awesome
 - **部署**: 支持静态部署到Vercel、Netlify等平台
 
-## 如何部署
-
-### 方案A: 静态部署（推荐）
-
-1. **创建GitHub仓库**
-   - 在GitHub上创建一个新的仓库
-   - 将本项目的所有文件上传到仓库中
-
-2. **部署到Vercel**
-   - 登录Vercel账号
-   - 点击「New Project」
-   - 选择你的GitHub仓库
-   - 点击「Deploy」
-   - Vercel会自动为你生成一个HTTPS链接
-
-3. **或部署到Netlify**
-   - 登录Netlify账号
-   - 点击「Add new site」→「Import an existing project」
-   - 选择你的GitHub仓库
-   - 点击「Deploy site」
-   - Netlify会自动为你生成一个HTTPS链接
-
-### 方案B: 本地运行
-
-1. **直接打开HTML文件**
-   - 在浏览器中直接打开 `index.html` 文件
-   - 或使用本地服务器（如Python的`http.server`）
-
-   ```bash
-   # 在项目目录中运行
-   python -m http.server 8000
-   # 然后访问 http://localhost:8000
-   ```
 
 ## 如何使用
 
