@@ -10,7 +10,7 @@ const translations = {
         hero_body: "上传 EVE 战斗日志，快速查看伤害、维修与命中表现。",
         choose_file: "选择日志",
         drop_title: "拖放战斗日志到这里",
-        drop_hint: "支持 .log 文件",
+        drop_hint: "支持 .txt 文件",
         reanalyze: "重新分析",
         change_file: "更换文件",
         total_damage: "总伤害",
@@ -37,7 +37,7 @@ const translations = {
         no_data: "暂无数据",
         no_events: "没有识别到战斗事件",
         select_file_first: "请先选择日志",
-        invalid_file: "请选择 .txt 或 .log 文件",
+        invalid_file: "请选择 .txt 文件",
         file_too_large: "文件超过 50 MB",
         read_failed: "无法读取日志，请重试",
         selected_file: "已选择",
@@ -59,7 +59,7 @@ const translations = {
         hero_body: "Upload an EVE combat log to see damage, repairs, and hit quality.",
         choose_file: "Choose log",
         drop_title: "Drop a combat log here",
-        drop_hint: "Supports .log files",
+        drop_hint: "Supports .txt files",
         reanalyze: "Analyze again",
         change_file: "Change file",
         total_damage: "Total damage",
@@ -86,7 +86,7 @@ const translations = {
         no_data: "No data",
         no_events: "No combat events found",
         select_file_first: "Choose a log first",
-        invalid_file: "Choose a .txt or .log file",
+        invalid_file: "Choose a .txt file",
         file_too_large: "The file is larger than 50 MB",
         read_failed: "The log could not be read",
         selected_file: "Selected",
@@ -200,7 +200,7 @@ function setLoading(isLoading) {
 function isValidLogFile(file) {
     if (!file) return false;
     const extension = file.name.split(".").pop()?.toLowerCase();
-    if (!new Set(["txt", "log"]).has(extension)) {
+    if (extension !== "txt") {
         showToast(t("invalid_file"), "error");
         return false;
     }
