@@ -1,1028 +1,574 @@
-// 全局变量
-let currentLogFile = null;
-let currentLanguage = 'en'; // 默认语言为英文
+import { analyzeLogText, EVENT_TYPES } from "./parser.js";
 
-// 语言翻译对象
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
 const translations = {
-    en: {
-        upload_section_title: 'Upload Log File',
-        select_log_file: 'Select EVE Online Combat Log File',
-        drag_drop_here: 'Click or drag file here',
-        analyze_log: 'Analyze Log',
-        analysis_results: 'Analysis Results',
-        damage_statistics: 'Damage Statistics',
-        repair_statistics: 'Repair Statistics',
-        total_dps: 'Damage Amount',
-        total_repair: 'Total Repair',
-        total_received_repair: 'Total Received Repair',
-        total_repair_count: 'Total Repair Count',
-        zero_repair_count: 'Zero Repair Count',
-        average_repair_value: 'Average Repair Value',
-        combat_start_time: 'Combat Start Time',
-        combat_id: 'Combat ID',
-        total_attacks: 'Total Attacks',
-        glancing_hits: 'Glancing Hits',
-        normal_hits: 'Normal Hits',
-        penetration_hits: 'Penetration Hits',
-        critical_hits: 'Critical Hits',
-        misses: 'Misses',
-        combat_replay: 'Combat Replay',
-        dealing_damage: 'Dealing Damage',
-        performing_repair: 'Performing Repair',
-        receiving_repair: 'Receiving Repair',
-        target: 'Target',
-        analyzing: 'Analyzing...',
-        log_analyzed: 'Log analysis completed!',
-        valid_data_found: 'Found valid data in',
-        lines: 'lines',
-        please_select_file: 'Please select a Log file first',
-        analysis_failed: 'Failed to analyze Log file: '
-    },
     zh: {
-        upload_section_title: '上传Log文件',
-        select_log_file: '选择EVE Online战斗日志文件',
-        drag_drop_here: '点击或拖拽文件到此处',
-        analyze_log: '分析Log',
-        analysis_results: '分析结果',
-        damage_statistics: '伤害统计',
-        repair_statistics: '维修统计',
-        total_dps: '伤害量',
-        total_repair: '总维修量',
-        total_received_repair: '总接收维修量',
-        total_repair_count: '总维修次数',
-        zero_repair_count: '维修量为0的次数',
-        average_repair_value: '平均每次维修值',
-        combat_start_time: '战斗开始时间',
-        combat_id: '战斗ID',
-        total_attacks: '总攻击次数',
-        glancing_hits: '轻轻擦过',
-        normal_hits: '命中',
-        penetration_hits: '穿透',
-        critical_hits: '强力一击',
-        misses: '完全没有打中',
-        combat_replay: '战斗回放',
-        dealing_damage: '造成伤害',
-        performing_repair: '进行维修',
-        receiving_repair: '接收维修',
-        target: '目标',
-        analyzing: '分析中...',
-        log_analyzed: 'Log分析完成！',
-        valid_data_found: '已经识别到',
-        lines: '行里有有效数据',
-        please_select_file: '请先选择一个Log文件',
-        analysis_failed: '分析Log文件失败: '
+        skip_to_content: "跳到主要内容",
+        nav_analysis: "日志分析",
+        nav_guide: "使用说明",
+        nav_privacy: "隐私",
+        hero_title: "今天你C了吗",
+        hero_body: "上传 EVE 战斗日志，快速查看伤害、维修与命中表现。",
+        choose_file: "选择日志",
+        drop_hint: "或拖放 .log 文件",
+        reanalyze: "重新分析",
+        change_file: "更换文件",
+        total_damage: "总伤害",
+        outgoing_repair: "输出维修",
+        received_repair: "接收维修",
+        attack_count: "攻击次数",
+        target_damage: "目标伤害",
+        hit_quality: "命中质量",
+        hit_label: "命中",
+        damage: "伤害",
+        target_distribution: "目标分布",
+        event_replay: "事件回放",
+        analyzing: "正在解析日志…",
+        glancing: "轻型擦过",
+        normal: "命中",
+        penetration: "穿透",
+        critical: "强力一击",
+        miss: "未命中",
+        target: "目标",
+        value: "数值",
+        share: "占比",
+        time: "时间",
+        event_type: "事件类型",
+        no_data: "暂无数据",
+        no_events: "没有识别到战斗事件",
+        select_file_first: "请先选择日志",
+        invalid_file: "请选择 .txt 或 .log 文件",
+        file_too_large: "文件超过 50 MB",
+        read_failed: "无法读取日志，请重试",
+        selected_file: "已选择",
+        analyzed_ok: "日志分析完成",
+        events_count: "{count} 条事件",
+        total: "总计",
+        outgoing_event: "输出维修",
+        received_event: "接收维修",
+        damage_event: "造成伤害",
+        repair_detail: "{count} 次",
+        damage_detail: "{count} 次攻击",
+        received_detail: "{count} 个来源",
+        guide_note: "选择日志，即刻生成战斗分析。",
+        privacy_note: "数据不留痕。",
+        unknown_owner: "UNKNOWN PILOT"
+    },
+    en: {
+        skip_to_content: "Skip to main content",
+        nav_analysis: "Log analysis",
+        nav_guide: "Guide",
+        nav_privacy: "Privacy",
+        hero_title: "Did you C today?",
+        hero_body: "Upload an EVE combat log to see damage, repairs, and hit quality.",
+        choose_file: "Choose log",
+        drop_hint: "or drop a .log file",
+        reanalyze: "Analyze again",
+        change_file: "Change file",
+        total_damage: "Total damage",
+        outgoing_repair: "Outgoing repair",
+        received_repair: "Received repair",
+        attack_count: "Attacks",
+        target_damage: "Damage by target",
+        hit_quality: "Hit quality",
+        hit_label: "Hits",
+        damage: "Damage",
+        target_distribution: "Target distribution",
+        event_replay: "Event replay",
+        analyzing: "Parsing combat log…",
+        glancing: "Glancing",
+        normal: "Hit",
+        penetration: "Penetrating",
+        critical: "Critical",
+        miss: "Miss",
+        target: "Target",
+        value: "Value",
+        share: "Share",
+        time: "Time",
+        event_type: "Event type",
+        no_data: "No data",
+        no_events: "No combat events found",
+        select_file_first: "Choose a log first",
+        invalid_file: "Choose a .txt or .log file",
+        file_too_large: "The file is larger than 50 MB",
+        read_failed: "The log could not be read",
+        selected_file: "Selected",
+        analyzed_ok: "Combat log analyzed",
+        events_count: "{count} events",
+        total: "Total",
+        outgoing_event: "Outgoing repair",
+        received_event: "Received repair",
+        damage_event: "Damage dealt",
+        repair_detail: "{count} cycles",
+        damage_detail: "{count} attacks",
+        received_detail: "{count} sources",
+        guide_note: "Choose a log to generate the analysis.",
+        privacy_note: "No data trail.",
+        unknown_owner: "UNKNOWN PILOT"
     }
 };
 
-// 图表实例
-let dpsChart = null;
-let repairChart = null;
+const state = {
+    language: localStorage.getItem("evelog-language") || "zh",
+    file: null,
+    analysis: null,
+    activeCategory: "damage",
+    toastTimer: null
+};
 
-// DOM元素
-const logFileInput = document.getElementById('log-file');
-const analyzeLogBtn = document.getElementById('analyze-log-btn');
-const logAnalysisSection = document.getElementById('log-analysis-section');
-const totalDpsEl = document.getElementById('total-dps');
-const totalRepairEl = document.getElementById('total-repair');
-const dpsChartCanvas = document.getElementById('dps-chart');
-const repairChartCanvas = document.getElementById('repair-chart');
-const combatEventsEl = document.getElementById('combat-events');
-const fileUploadArea = document.querySelector('.file-upload-area');
-const loading = document.getElementById('loading');
-const errorMessage = document.getElementById('error-message');
-const errorText = document.getElementById('error-text');
+const dom = {
+    siteFrame: document.querySelector("#site-frame"),
+    hero: document.querySelector("#upload"),
+    fileInput: document.querySelector("#log-file"),
+    resultsView: document.querySelector("#results-view"),
+    ownerId: document.querySelector("#owner-id"),
+    fileName: document.querySelector("#file-name"),
+    fileSize: document.querySelector("#file-size"),
+    analyzeButton: document.querySelector("#analyze-log-button"),
+    changeButton: document.querySelector("#change-file-button"),
+    totalDamage: document.querySelector("#total-damage"),
+    totalRepair: document.querySelector("#total-repair"),
+    totalReceived: document.querySelector("#total-received"),
+    attackCount: document.querySelector("#attack-count"),
+    targetChart: document.querySelector("#target-chart"),
+    hitRing: document.querySelector("#hit-ring"),
+    hitTotal: document.querySelector("#hit-total"),
+    hitRate: document.querySelector("#hit-rate"),
+    hitLegend: document.querySelector("#hit-legend"),
+    distributionList: document.querySelector("#distribution-list"),
+    categorySummary: document.querySelector("#category-summary"),
+    eventList: document.querySelector("#event-list"),
+    eventCount: document.querySelector("#event-count"),
+    loading: document.querySelector("#loading"),
+    toast: document.querySelector("#toast"),
+    toastText: document.querySelector("#toast-text"),
+    navAnalyze: document.querySelector("#nav-analyze"),
+    navGuide: document.querySelector("#nav-guide"),
+    navPrivacy: document.querySelector("#nav-privacy")
+};
 
-// 显示加载指示器
-function showLoading() {
-    loading.classList.remove('hidden');
-    // 更新加载文本
-    const loadingText = document.querySelector('.loading-text');
-    if (loadingText) {
-        loadingText.textContent = translations[currentLanguage].analyzing;
+function t(key, replacements = {}) {
+    let value = translations[state.language][key] || key;
+    for (const [name, replacement] of Object.entries(replacements)) {
+        value = value.replace(`{${name}}`, replacement);
     }
+    return value;
 }
 
-// 隐藏加载指示器
-function hideLoading() {
-    loading.classList.add('hidden');
+function formatNumber(value, maximumFractionDigits = 0) {
+    return new Intl.NumberFormat(state.language === "zh" ? "zh-CN" : "en-US", {
+        maximumFractionDigits
+    }).format(Number(value) || 0);
 }
 
-// 显示错误信息
-function showError(message) {
-    errorText.textContent = message;
-    errorMessage.classList.remove('hidden');
-    
-    // 3秒后自动隐藏
-    setTimeout(() => {
-        hideError();
-    }, 3000);
+function formatPercent(value) {
+    const safeValue = Number.isFinite(value) ? value : 0;
+    return `${safeValue.toFixed(1)}%`;
 }
 
-// 隐藏错误信息
-function hideError() {
-    errorMessage.classList.add('hidden');
+function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes)) return "—";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 ** 2).toFixed(2)} MB`;
 }
 
-// 切换语言
-function switchLanguage(lang) {
-    currentLanguage = lang;
-    
-    // 更新语言按钮状态
-    document.getElementById('en-btn').classList.toggle('active', lang === 'en');
-    document.getElementById('zh-btn').classList.toggle('active', lang === 'zh');
-    
-    // 更新页面文本
-    updatePageText();
-    
-    // 更新图表标题
-    if (dpsChart) {
-        renderDpsChart(window.currentAnalysisData);
-    }
-    if (repairChart) {
-        renderRepairChart(window.currentAnalysisData);
-    }
-    if (window.receivedRepairChart) {
-        renderReceivedRepairChart(window.currentAnalysisData);
-    }
-}
+function applyTranslations() {
+    document.documentElement.lang = state.language === "zh" ? "zh-CN" : "en";
+    document.title = state.language === "zh" ? "EVELOG · 战斗日志分析" : "EVELOG · Combat log analyzer";
 
-// 更新页面文本
-function updatePageText() {
-    // 遍历所有带有data-lang-key属性的元素
-    document.querySelectorAll('[data-lang-key]').forEach(element => {
-        const key = element.getAttribute('data-lang-key');
-        if (translations[currentLanguage][key]) {
-            element.textContent = translations[currentLanguage][key];
-        }
+    document.querySelectorAll("[data-i18n]").forEach((element) => {
+        element.textContent = t(element.dataset.i18n);
     });
-    
-    // 更新标题
-    document.title = currentLanguage === 'en' ? 'EVE Online Log Analyze' : 'EVE Online Log分析系统';
-    
-    // 更新页面主标题
-    const titleElement = document.querySelector('.title');
-    if (titleElement) {
-        titleElement.innerHTML = `<i class="fas fa-file-alt"></i> ${currentLanguage === 'en' ? 'EVE Online Log Analyze' : 'EVE Online Log分析系统'}`;
-    }
-}
 
-// 初始化语言切换功能
-function initLanguageSwitch() {
-    // 英文按钮
-    document.getElementById('en-btn').addEventListener('click', () => {
-        switchLanguage('en');
+    document.querySelectorAll("[data-language]").forEach((button) => {
+        const isActive = button.dataset.language === state.language;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
     });
-    
-    // 中文按钮
-    document.getElementById('zh-btn').addEventListener('click', () => {
-        switchLanguage('zh');
-    });
-    
-    // 初始加载时更新页面文本
-    updatePageText();
+
+    if (state.analysis) renderResults();
 }
 
-// 更新文件上传区域显示
-function updateFileUploadDisplay(filename) {
-    const fileLabel = fileUploadArea.querySelector('.file-label');
-    if (fileLabel) {
-        fileLabel.innerHTML = `
-            <i class="fas fa-file-alt"></i>
-            <span>${filename}</span>
-            <span style="font-size: 0.9rem; color: #94a3b8;">点击更换文件</span>
-        `;
+function showToast(message, type = "success") {
+    window.clearTimeout(state.toastTimer);
+    dom.toastText.textContent = message;
+    dom.toast.classList.toggle("error", type === "error");
+    dom.toast.classList.remove("hidden");
+    state.toastTimer = window.setTimeout(() => dom.toast.classList.add("hidden"), 2800);
+}
+
+function setLoading(isLoading) {
+    dom.loading.classList.toggle("hidden", !isLoading);
+    dom.analyzeButton.disabled = isLoading;
+    dom.changeButton.disabled = isLoading;
+}
+
+function isValidLogFile(file) {
+    if (!file) return false;
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!new Set(["txt", "log"]).has(extension)) {
+        showToast(t("invalid_file"), "error");
+        return false;
     }
-}
-
-// 初始化文件上传功能
-function initFileUpload() {
-    if (fileUploadArea) {
-        // 拖拽功能
-        fileUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUploadArea.classList.add('drag-active');
-        });
-
-        fileUploadArea.addEventListener('dragleave', () => {
-            fileUploadArea.classList.remove('drag-active');
-        });
-
-        fileUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUploadArea.classList.remove('drag-active');
-            
-            if (e.dataTransfer.files.length > 0) {
-                currentLogFile = e.dataTransfer.files[0];
-                updateFileUploadDisplay(currentLogFile.name);
-                showError(`已选择文件: ${currentLogFile.name}`);
-            }
-        });
-
-        // 文件选择功能
-        logFileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                currentLogFile = e.target.files[0];
-                updateFileUploadDisplay(currentLogFile.name);
-                showError(`已选择文件: ${currentLogFile.name}`);
-            }
-        });
+    if (file.size > MAX_FILE_SIZE) {
+        showToast(t("file_too_large"), "error");
+        return false;
     }
+    return true;
 }
 
-// 解析Log文件
-function parseLogFile(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const content = e.target.result;
-                const lines = content.split('\n');
-                const data = analyzeLogData(lines);
-                resolve(data);
-            } catch (error) {
-                reject(error);
-            }
+function createElement(tag, className, text) {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+}
+
+function sortedEntries(group) {
+    return Object.entries(group).sort(([, a], [, b]) => b - a);
+}
+
+function getSeries(category) {
+    if (category === "repair") {
+        return {
+            data: state.analysis.repairByTarget,
+            total: state.analysis.totalRepair,
+            color: "#55d995"
         };
-        reader.onerror = (error) => {
-            reject(error);
+    }
+    if (category === "received") {
+        return {
+            data: state.analysis.receivedBySource,
+            total: state.analysis.totalReceivedRepair,
+            color: "#579dff"
         };
-        reader.readAsText(file);
-    });
-}
-
-// 分析Log数据
-function analyzeLogData(lines) {
-    const data = {
-        totalDps: 0,
-        totalRepair: 0,
-        totalReceivedRepair: 0,
-        dpsByTarget: {},
-        repairByTarget: {},
-        receivedRepairBySource: {},
-        processedLines: 0,
-        unrecognizedLines: 0,
-        events: [], // 用于战斗回放
-        damageEvents: [], // 用于DPS计算
-        repairEvents: [], // 用于HPS计算
-        receivedRepairEvents: [], // 用于接收维修计算
-        combatStartTime: null, // 战斗开始时间
-        combatId: null, // 战斗ID
-        hitStats: {
-            total: 0, // 总攻击次数
-            glancing: 0, // 轻轻擦过
-            hit: 0, // 命中
-            penetration: 0, // 穿透
-            critical: 0, // 强力一击
-            miss: 0 // 完全没有打中
-        },
-        hitRates: {
-            glancing: 0, // 轻轻擦过概率
-            hit: 0, // 命中概率
-            penetration: 0, // 穿透概率
-            critical: 0, // 强力一击概率
-            miss: 0 // 完全没有打中概率
-        },
-        repairStats: {
-            totalRepairCount: 0, // 总维修次数
-            zeroRepairCount: 0, // 维修量为0的次数
-            zeroRepairRate: 0, // 维修量为0的概率
-            averageRepairValue: 0 // 平均每次维修值
-        }
+    }
+    return {
+        data: state.analysis.damageByTarget,
+        total: state.analysis.totalDamage,
+        color: "#ff563e"
     };
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        // 提取时间戳
-        let timestampMatch = line.match(/\[\s*(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2})\s*\]/);
-        let timestamp = timestampMatch ? timestampMatch[1] : 'Unknown';
-        
-        // 更新战斗时间
-        if (timestamp !== 'Unknown') {
-            const dateTime = new Date(timestamp.replace('.', '-'));
-            if (!data.combatStartTime || dateTime < new Date(data.combatStartTime.replace('.', '-'))) {
-                data.combatStartTime = timestamp;
-            }
-        }
-        
-        // 尝试提取战斗ID（从"收听者:"后面提取）
-        if (!data.combatId) {
-            const combatIdMatch = line.match(/收听者:\s*(.+)/);
-            if (combatIdMatch) {
-                data.combatId = combatIdMatch[1].trim();
-            }
-        }
-        
-        // 尝试多种日志格式解析
-        let match = null;
-        let eventType = null;
-        let target = null;
-        let value = null;
-        let eventSubtype = null;
-        
-        // 基于颜色代码识别事件类型
-        if (line.includes('color=0xff00ffff')) {
-            // 紫红色：用户打出的伤害
-            eventType = 'DAMAGE';
-            eventSubtype = 'OUT_Damage';
-            
-            // 提取伤害值
-            match = line.match(/<b>(\d+)<\/b>/);
-            if (match) {
-                value = parseInt(match[1]);
-                
-                // 提取目标
-                let pilotName = null;
-                let shipType = null;
-                
-                // 尝试从目标中提取飞行员名称和舰船类型
-                // 模式1: 名称[联盟](舰船类型*)
-                const fullTargetMatch = line.match(/<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/);
-                if (fullTargetMatch) {
-                    let fullTarget = fullTargetMatch[1].trim();
-                    // 移除任何HTML标签
-                    fullTarget = fullTarget.replace(/<[^>]+>/g, '').trim();
-                    
-                    // 尝试从括号中提取舰船类型
-                    const shipTypeMatch = fullTarget.match(/\(([^)]+\*?)\)/);
-                    if (shipTypeMatch) {
-                        shipType = shipTypeMatch[1].trim();
-                        shipType = shipType.replace(/\*$/, '');
-                        // 提取飞行员名称（去掉舰船类型部分）
-                        pilotName = fullTarget.replace(/\s*\([^)]+\*?\)/, '').trim();
-                        target = `${pilotName}（${shipType}）`;
-                    } else {
-                        target = fullTarget;
-                    }
-                } else {
-                    // 尝试其他模式
-                    const targetPatterns = [
-                        /对[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                        /对[\s\S]*?<b>([\s\S]*?)<\/b>/,
-                        /对[\s\S]*?<color=0xffffffff>([\s\S]*?)<\/color>/,
-                        /<font size=10>对<\/font>[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                        /<font size=10>对<\/font>[\s\S]*?<b>([\s\S]*?)<\/b>/,
-                        /(SLBY BC\[\.CCT\.\]\(神示级海军型\*\))/,
-                        /<color=0xffffffff>([\s\S]*?)<\/color>/
-                    ];
-                    
-                    for (const pattern of targetPatterns) {
-                        match = line.match(pattern);
-                        if (match) {
-                            let extractedTarget = match[1].trim();
-                            // 移除任何剩余的HTML标签
-                            extractedTarget = extractedTarget.replace(/<[^>]+>/g, '').trim();
-                            
-                            // 尝试从括号中提取舰船类型
-                            const shipTypeMatch = extractedTarget.match(/\(([^)]+\*?)\)/);
-                            if (shipTypeMatch) {
-                                shipType = shipTypeMatch[1].trim();
-                                shipType = shipType.replace(/\*$/, '');
-                                // 提取飞行员名称（去掉舰船类型部分）
-                                pilotName = extractedTarget.replace(/\s*\([^)]+\*?\)/, '').trim();
-                                target = `${pilotName}（${shipType}）`;
-                            } else {
-                                target = extractedTarget;
-                            }
-                            break;
-                        }
-                    }
-                    
-                    if (!target) {
-                        target = 'Unknown';
-                    }
-                }
-            }
-        } else if (line.includes('color=0xffccff66')) {
-            // 检查是维修量至（发出的维修）还是维修量由（接收的维修）
-            if (line.includes('远程装甲维修量至')) {
-                // 浅绿色：用户的后勤维修量（发出的维修）
-                eventType = 'REPAIR';
-                eventSubtype = 'OUT_Repair';
-                
-                // 提取维修值
-                match = line.match(/<b>(\d+)<\/b>/);
-                if (match) {
-                    value = parseInt(match[1]);
-                    
-                    // 提取目标
-                    let pilotName = null;
-                    let shipType = null;
-                    
-                    // 提取舰船类型（优先匹配带localized标签的）
-                    const shipMatch = line.match(/<localized hint="[^"]+">([^<]+)<\/localized>/);
-                    if (shipMatch) {
-                        shipType = shipMatch[1].trim();
-                        // 移除末尾的星号
-                        shipType = shipType.replace(/\*$/, '');
-                    } else {
-                        // 尝试其他模式
-                        const shipPatterns = [
-                            /<color=0xFFFFCC66>\s*<u><b>([^<]+)<\/b><\/u><\/color>/,
-                            /<u><b>([^<]+)<\/b><\/u>/,
-                            /<font size=14><color=0xFFFFCC66>\s*<u><b>([^<]+)<\/b><\/u><\/color><\/font>/,
-                            /<font size=14><color=0xFFFFCC66>\s*<u><b><localized hint="[^"]+">([^<]+)<\/localized><\/b><\/u><\/color><\/font>/
-                        ];
-                        
-                        for (const pattern of shipPatterns) {
-                            match = line.match(pattern);
-                            if (match) {
-                                shipType = match[1].trim();
-                                // 移除末尾的星号
-                                shipType = shipType.replace(/\*$/, '');
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 如果上面的方法都没找到，尝试从完整目标字符串中提取
-                    if (!shipType) {
-                        const fullTargetMatch = line.match(/<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/);
-                        if (fullTargetMatch) {
-                            const fullTarget = fullTargetMatch[1];
-                            // 尝试从括号中提取舰船类型
-                            const shipTypeMatch = fullTarget.match(/\(([^)]+\*?)\)/);
-                            if (shipTypeMatch) {
-                                shipType = shipTypeMatch[1].trim();
-                                shipType = shipType.replace(/\*$/, '');
-                            }
-                        }
-                    }
-                    
-                    // 提取飞行员名称（优先匹配带颜色标签的）
-                    const pilotMatch = line.match(/<font size=12><color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color><\/font>/);
-                    if (pilotMatch) {
-                        pilotName = pilotMatch[1].trim();
-                    } else {
-                        // 尝试其他模式
-                        const pilotPatterns = [
-                            /<color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color>/,
-                            /<b>([^<]+)<\/b>\s*-/,
-                            /远程装甲维修量至[\s\S]*? - ([^-]+) -/,
-                            /至[\s\S]*? - ([^-]+) -/
-                        ];
-                        
-                        for (const pattern of pilotPatterns) {
-                            match = line.match(pattern);
-                            if (match) {
-                                pilotName = match[1].trim();
-                                // 移除末尾的空格和特殊字符
-                                pilotName = pilotName.replace(/\s*$/, '');
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 构建目标名称
-                    if (pilotName && shipType) {
-                        // 移除任何HTML标签
-                        pilotName = pilotName.replace(/<[^>]+>/g, '').trim();
-                        shipType = shipType.replace(/<[^>]+>/g, '').trim();
-                        target = `${pilotName}（${shipType}）`;
-                    } else if (pilotName) {
-                        // 移除任何HTML标签
-                        pilotName = pilotName.replace(/<[^>]+>/g, '').trim();
-                        target = pilotName;
-                    } else if (shipType) {
-                        // 移除任何HTML标签
-                        shipType = shipType.replace(/<[^>]+>/g, '').trim();
-                        target = shipType;
-                    } else {
-                        // 尝试通用模式
-                        const generalPatterns = [
-                            /远程装甲维修量至[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                            /远程装甲维修量至[\s\S]*?<b>([\s\S]*?)<\/b>/,
-                            /维修[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                            /维修[\s\S]*?<b>([\s\S]*?)<\/b>/,
-                            /至[\s\S]*?<b><color=0xffffffff>([\s\S]*?)<\/color><\/b>/,
-                            /至[\s\S]*?<b>([\s\S]*?)<\/b>/
-                        ];
-                        
-                        for (const pattern of generalPatterns) {
-                            match = line.match(pattern);
-                            if (match) {
-                                target = match[1].trim();
-                                // 移除任何HTML标签
-                                target = target.replace(/<[^>]+>/g, '').trim();
-                                break;
-                            }
-                        }
-                        
-                        if (!target) {
-                            target = 'Fleet Member';
-                        }
-                    }
-                }
-            } else if (line.includes('远程装甲维修量由')) {
-                // 浅绿色：用户接收的维修量
-                eventType = 'RECEIVED_REPAIR';
-                eventSubtype = 'IN_Repair';
-                
-                // 提取维修值
-                match = line.match(/<b>(\d+)<\/b>/);
-                if (match) {
-                    value = parseInt(match[1]);
-                    
-                    // 提取来源
-                    let sourceName = null;
-                    let shipType = null;
-                    
-                    // 提取飞行员名称（优先匹配带颜色标签的）
-                    const sourceMatch = line.match(/<font size=12><color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color><\/font>/);
-                    if (sourceMatch) {
-                        sourceName = sourceMatch[1].trim();
-                    } else {
-                        // 尝试其他模式
-                        const sourcePatterns = [
-                            /<color=0xFFFFFFFF>\s*<b>([^<]+)<\/b><\/color>/,
-                            /<b>([^<]+)<\/b>\s*-/,
-                            /远程装甲维修量由[\s\S]*? - ([^-]+) -/,
-                            /由[\s\S]*? - ([^-]+) -/
-                        ];
-                        
-                        for (const pattern of sourcePatterns) {
-                            match = line.match(pattern);
-                            if (match) {
-                                sourceName = match[1].trim();
-                                // 移除末尾的空格和特殊字符
-                                sourceName = sourceName.replace(/\s*$/, '');
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // 提取舰船类型（如果有）
-                    const shipMatch = line.match(/<localized hint="[^"]+">([^<]+)<\/localized>/);
-                    if (shipMatch) {
-                        shipType = shipMatch[1].trim();
-                        // 移除末尾的星号
-                        shipType = shipType.replace(/\*$/, '');
-                    }
-                    
-                    // 构建来源名称
-                    if (sourceName && shipType) {
-                        // 移除任何HTML标签
-                        sourceName = sourceName.replace(/<[^>]+>/g, '').trim();
-                        shipType = shipType.replace(/<[^>]+>/g, '').trim();
-                        target = `${sourceName}（${shipType}）`;
-                    } else if (sourceName) {
-                        // 移除任何HTML标签
-                        sourceName = sourceName.replace(/<[^>]+>/g, '').trim();
-                        target = sourceName;
-                    } else {
-                        target = 'Unknown Source';
-                    }
-                }
-            }
-        }
-        
-        // 格式1: [时间] [事件类型] [来源] [目标] [数值]
-        if (!eventType) {
-            match = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\] \[(\w+)\] \[(\w+)\] \[(\w+)\] (\d+)/);
-            if (match) {
-                timestamp = match[1];
-                eventType = match[2].toUpperCase();
-                target = match[4];
-                value = parseInt(match[5]);
-                eventSubtype = eventType;
-            }
-        }
-        
-        // 格式2: 时间 事件类型 来源 目标 数值
-        if (!eventType) {
-            match = line.match(/(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(\w+)\s+(\w+)\s+(\w+)\s+(\d+)/);
-            if (match) {
-                timestamp = match[1];
-                eventType = match[2].toUpperCase();
-                target = match[4];
-                value = parseInt(match[5]);
-                eventSubtype = eventType;
-            }
-        }
-
-        // 处理"完全没有打中"的情况
-        if (!eventType && line.includes('完全没有打中')) {
-            // 提取时间戳
-            let timestampMatch = line.match(/\[\s*(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2})\s*\]/);
-            if (timestampMatch) {
-                timestamp = timestampMatch[1];
-            }
-            
-            // 设置事件类型为DAMAGE
-            eventType = 'DAMAGE';
-            eventSubtype = 'OUT_Damage';
-            
-            // 提取目标（从"完全没有打中"后面提取）
-            const targetMatch = line.match(/完全没有打中([^-]+)-/);
-            if (targetMatch) {
-                target = targetMatch[1].trim();
-            } else {
-                target = 'Unknown';
-            }
-            
-            // 设置伤害值为0
-            value = 0;
-        }
-
-        // 如果成功解析到事件类型、目标和数值（包括value为0的情况）
-        if (eventType && target !== undefined && value !== undefined) {
-            data.processedLines++;
-            
-            // 记录事件用于战斗回放
-            data.events.push({
-                timestamp: timestamp,
-                type: eventType,
-                subtype: eventSubtype,
-                target: target,
-                value: value
-            });
-            
-            switch (eventType) {
-                case 'DAMAGE':
-                    data.totalDps += value;
-                    if (!data.dpsByTarget[target]) {
-                        data.dpsByTarget[target] = 0;
-                    }
-                    data.dpsByTarget[target] += value;
-                    // 记录伤害事件用于DPS计算
-                    data.damageEvents.push({
-                        timestamp: timestamp,
-                        value: value
-                    });
-                    // 统计攻击次数和命中类型
-                    data.hitStats.total++;
-                    
-                    // 检测命中类型
-                    if (line.includes('轻轻擦过') || line.includes('glancing')) {
-                        data.hitStats.glancing++;
-                    } else if (line.includes('命中') || line.includes('hit')) {
-                        data.hitStats.hit++;
-                    } else if (line.includes('穿透') || line.includes('penetration')) {
-                        data.hitStats.penetration++;
-                    } else if (line.includes('强力一击') || line.includes('critical') || line.includes('strong')) {
-                        data.hitStats.critical++;
-                    } else if (line.includes('完全没有打中') || line.includes('miss') || line.includes('未命中')) {
-                        data.hitStats.miss++;
-                    } else {
-                        // 默认视为普通命中
-                        data.hitStats.hit++;
-                    }
-                    break;
-                case 'REPAIR':
-                    data.totalRepair += value;
-                    if (!data.repairByTarget[target]) {
-                        data.repairByTarget[target] = 0;
-                    }
-                    data.repairByTarget[target] += value;
-                    // 记录维修事件用于HPS计算
-                    data.repairEvents.push({
-                        timestamp: timestamp,
-                        value: value
-                    });
-                    // 统计维修次数和0值维修
-                    data.repairStats.totalRepairCount++;
-                    if (value === 0) {
-                        data.repairStats.zeroRepairCount++;
-                    }
-                    break;
-                case 'RECEIVED_REPAIR':
-                    data.totalReceivedRepair += value;
-                    if (!data.receivedRepairBySource[target]) {
-                        data.receivedRepairBySource[target] = 0;
-                    }
-                    data.receivedRepairBySource[target] += value;
-                    // 记录接收维修事件
-                    data.receivedRepairEvents.push({
-                        timestamp: timestamp,
-                        value: value
-                    });
-                    break;
-            }
-        } else {
-            data.unrecognizedLines++;
-        }
-    });
-
-    // 计算各种命中类型的概率
-    if (data.hitStats.total > 0) {
-        data.hitRates.glancing = (data.hitStats.glancing / data.hitStats.total * 100).toFixed(2);
-        data.hitRates.hit = (data.hitStats.hit / data.hitStats.total * 100).toFixed(2);
-        data.hitRates.penetration = (data.hitStats.penetration / data.hitStats.total * 100).toFixed(2);
-        data.hitRates.critical = (data.hitStats.critical / data.hitStats.total * 100).toFixed(2);
-        data.hitRates.miss = (data.hitStats.miss / data.hitStats.total * 100).toFixed(2);
-    }
-
-    // 计算维修相关统计
-    if (data.repairStats.totalRepairCount > 0) {
-        data.repairStats.zeroRepairRate = (data.repairStats.zeroRepairCount / data.repairStats.totalRepairCount * 100).toFixed(2);
-        data.repairStats.averageRepairValue = (data.totalRepair / data.repairStats.totalRepairCount).toFixed(2);
-    }
-
-    return data;
 }
 
-// 渲染DPS图表
-function renderDpsChart(data) {
-    if (dpsChart) {
-        dpsChart.destroy();
-    }
-
-    // 对目标按伤害量从高到低排序
-    const sortedTargets = Object.entries(data.dpsByTarget)
-        .sort((a, b) => b[1] - a[1])
-        .map(entry => entry[0]);
-    const sortedValues = sortedTargets.map(target => data.dpsByTarget[target]);
-
-    const ctx = dpsChartCanvas.getContext('2d');
-    dpsChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedTargets,
-            datasets: [{
-                label: currentLanguage === 'en' ? 'DPS Damage to Targets' : 'DPS对目标造成的伤害',
-                data: sortedValues,
-                backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                borderColor: 'rgba(231, 76, 60, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: currentLanguage === 'en' ? 'DPS Damage to Each Target' : 'DPS对各目标造成的伤害'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: currentLanguage === 'en' ? 'Damage Value' : '伤害值'
-                    }
-                }
-            }
-        }
-    });
-}
-
-// 渲染维修图表
-function renderRepairChart(data) {
-    if (repairChart) {
-        repairChart.destroy();
-    }
-
-    // 对目标按维修量从高到低排序
-    const sortedTargets = Object.entries(data.repairByTarget)
-        .sort((a, b) => b[1] - a[1])
-        .map(entry => entry[0]);
-    const sortedValues = sortedTargets.map(target => data.repairByTarget[target]);
-
-    const ctx = repairChartCanvas.getContext('2d');
-    repairChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedTargets,
-            datasets: [{
-                label: currentLanguage === 'en' ? 'Repair to Targets' : '对目标维修量',
-                data: sortedValues,
-                backgroundColor: 'rgba(80, 200, 120, 0.7)',
-                borderColor: 'rgba(80, 200, 120, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: currentLanguage === 'en' ? 'Repair to Each Target' : '对目标维修量'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: currentLanguage === 'en' ? 'Repair Value' : '维修值'
-                    }
-                }
-            }
-        }
-    });
-}
-
-// 渲染接收维修图表
-function renderReceivedRepairChart(data) {
-    const receivedRepairChartCanvas = document.getElementById('received-repair-chart');
-    if (!receivedRepairChartCanvas) return;
-
-    let receivedRepairChart = null;
-    if (window.receivedRepairChart) {
-        window.receivedRepairChart.destroy();
-    }
-
-    // 对来源按接收维修量从高到低排序
-    const sortedSources = Object.entries(data.receivedRepairBySource)
-        .sort((a, b) => b[1] - a[1])
-        .map(entry => entry[0]);
-    const sortedValues = sortedSources.map(source => data.receivedRepairBySource[source]);
-
-    const ctx = receivedRepairChartCanvas.getContext('2d');
-    window.receivedRepairChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: sortedSources,
-            datasets: [{
-                label: currentLanguage === 'en' ? 'Received Repair' : '接收的维修量',
-                data: sortedValues,
-                backgroundColor: 'rgba(100, 149, 237, 0.7)',
-                borderColor: 'rgba(100, 149, 237, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: currentLanguage === 'en' ? 'Received Repair from Each Source' : '从各来源接收的维修量'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: currentLanguage === 'en' ? 'Repair Value' : '维修值'
-                    }
-                }
-            }
-        }
-    });
-}
-
-
-
-// 渲染战斗回放
-function renderCombatReplay(data) {
-    combatEventsEl.innerHTML = '';
-    
-    // 按时间排序事件
-    const sortedEvents = [...data.events].sort((a, b) => {
-        return new Date(a.timestamp.replace('.', '-')) - new Date(b.timestamp.replace('.', '-'));
-    });
-    
-    sortedEvents.forEach(event => {
-        const eventEl = document.createElement('div');
-        eventEl.className = `combat-event ${event.type.toLowerCase()}`;
-        
-        let eventTypeText = '';
-        switch (event.type) {
-            case 'DAMAGE':
-                eventTypeText = currentLanguage === 'en' ? translations[currentLanguage].dealing_damage : translations[currentLanguage].dealing_damage;
-                break;
-            case 'REPAIR':
-                eventTypeText = currentLanguage === 'en' ? translations[currentLanguage].performing_repair : translations[currentLanguage].performing_repair;
-                break;
-            case 'RECEIVED_REPAIR':
-                eventTypeText = currentLanguage === 'en' ? translations[currentLanguage].receiving_repair : translations[currentLanguage].receiving_repair;
-                break;
-        }
-        
-        eventEl.innerHTML = `
-            <div class="event-timestamp">${event.timestamp}</div>
-            <div class="event-details">
-                <span class="event-type">${eventTypeText}</span>
-                <span class="event-value ${event.type.toLowerCase()}">${event.value}</span>
-            </div>
-            <div class="event-target">
-                ${currentLanguage === 'en' ? translations[currentLanguage].target : translations[currentLanguage].target}: ${event.target}
-            </div>
-        `;
-        
-        combatEventsEl.appendChild(eventEl);
-    });
-}
-
-// 分析Log文件
-async function analyzeLog() {
-    if (!currentLogFile) {
-        showError(translations[currentLanguage].please_select_file);
+function renderTargetChart() {
+    dom.targetChart.replaceChildren();
+    const entries = sortedEntries(state.analysis.damageByTarget).slice(0, 5);
+    if (!entries.length) {
+        dom.targetChart.append(createElement("div", "empty-chart", t("no_data")));
         return;
     }
 
-    showLoading();
-    hideError();
+    const maximum = Math.max(...entries.map(([, value]) => value), 1);
+    for (const [name, value] of entries) {
+        const row = createElement("div", "bar-row");
+        const label = createElement("span", "bar-label", name);
+        label.title = name;
+        const track = createElement("span", "bar-track");
+        const fill = createElement("span", "bar-fill");
+        fill.style.setProperty("--bar-size", `${(value / maximum) * 100}%`);
+        fill.style.setProperty("--series-color", "#ff563e");
+        track.append(fill);
+        const share = state.analysis.totalDamage ? (value / state.analysis.totalDamage) * 100 : 0;
+        const valueLabel = createElement("span", "bar-value", `${formatNumber(value)} · ${formatPercent(share)}`);
+        row.append(label, track, valueLabel);
+        dom.targetChart.append(row);
+    }
+}
+
+function renderHitQuality() {
+    const hitKeys = ["normal", "miss", "glancing", "penetration", "critical"];
+    const colors = {
+        normal: "#ff563e",
+        miss: "#a8a5af",
+        glancing: "#ffb51b",
+        penetration: "#579dff",
+        critical: "#55d995"
+    };
+    const total = state.analysis.hitStats.total;
+    const landed = Math.max(0, total - state.analysis.hitStats.miss);
+    const landedRate = total ? (landed / total) * 100 : 0;
+    dom.hitTotal.textContent = formatNumber(landed);
+    dom.hitRate.textContent = `/ ${Math.round(landedRate)}%`;
+    dom.hitLegend.replaceChildren();
+
+    let cursor = 0;
+    const segments = [];
+    for (const key of hitKeys) {
+        const rate = state.analysis.hitRates[key] || 0;
+        if (rate > 0) {
+            segments.push(`${colors[key]} ${cursor}% ${cursor + rate}%`);
+            cursor += rate;
+        }
+
+        const item = createElement("li");
+        const dot = createElement("span", "legend-dot");
+        dot.style.setProperty("--legend-color", colors[key]);
+        item.append(
+            dot,
+            createElement("span", "", `${t(key)}  ${formatNumber(state.analysis.hitStats[key])}`),
+            createElement("span", "legend-percent", `(${formatPercent(rate)})`)
+        );
+        dom.hitLegend.append(item);
+    }
+
+    dom.hitRing.style.background = total && segments.length
+        ? `conic-gradient(${segments.join(", ")})`
+        : "conic-gradient(rgba(120, 111, 144, .3) 0 100%)";
+}
+
+function renderDistribution() {
+    dom.distributionList.replaceChildren();
+    const series = getSeries(state.activeCategory);
+    const entries = sortedEntries(series.data);
+
+    dom.categorySummary.textContent = state.activeCategory === "repair"
+        ? t("repair_detail", { count: formatNumber(state.analysis.repairStats.totalCount) })
+        : state.activeCategory === "received"
+            ? t("received_detail", { count: formatNumber(entries.length) })
+            : t("damage_detail", { count: formatNumber(state.analysis.hitStats.total) });
+
+    if (!entries.length) {
+        dom.distributionList.append(createElement("div", "empty-list", t("no_data")));
+        return;
+    }
+
+    const header = createElement("div", "distribution-header");
+    header.append(
+        createElement("span", "", t("target")),
+        createElement("span", "", t("value")),
+        createElement("span", "", t("share"))
+    );
+    dom.distributionList.append(header);
+
+    for (const [name, value] of entries.slice(0, 8)) {
+        const share = series.total ? (value / series.total) * 100 : 0;
+        const row = createElement("div", "distribution-row");
+        row.style.setProperty("--series-color", series.color);
+        const nameElement = createElement("span", "distribution-name", name);
+        nameElement.title = name;
+        const valueElement = createElement("span", "distribution-value", formatNumber(value));
+        const shareCell = createElement("span", "distribution-share");
+        const shareBar = createElement("span", "share-bar");
+        const shareFill = createElement("span");
+        shareFill.style.setProperty("--bar-size", `${share}%`);
+        shareBar.append(shareFill);
+        shareCell.append(shareBar, document.createTextNode(formatPercent(share)));
+        row.append(nameElement, valueElement, shareCell);
+        dom.distributionList.append(row);
+    }
+
+    const totalRow = createElement("div", "distribution-row distribution-total");
+    totalRow.append(
+        createElement("span", "", t("total")),
+        createElement("span", "distribution-value", formatNumber(series.total)),
+        createElement("span", "distribution-share", "100.0%")
+    );
+    dom.distributionList.append(totalRow);
+}
+
+function eventLabel(type) {
+    if (type === EVENT_TYPES.REPAIR) return t("outgoing_event");
+    if (type === EVENT_TYPES.RECEIVED) return t("received_event");
+    return t("damage_event");
+}
+
+function eventColor(type) {
+    if (type === EVENT_TYPES.REPAIR) return "#55d995";
+    if (type === EVENT_TYPES.RECEIVED) return "#579dff";
+    return "#ff563e";
+}
+
+function renderEvents() {
+    dom.eventList.replaceChildren();
+    const events = state.analysis.events;
+    dom.eventCount.textContent = t("events_count", { count: formatNumber(events.length) });
+
+    if (!events.length) {
+        dom.eventList.append(createElement("div", "empty-list", t("no_events")));
+        return;
+    }
+
+    const header = createElement("div", "event-header");
+    header.append(
+        createElement("span", "", t("time")),
+        createElement("span", "", t("event_type")),
+        createElement("span", "", t("target")),
+        createElement("span", "", t("value"))
+    );
+    dom.eventList.append(header);
+
+    for (const event of events) {
+        const row = createElement("div", "event-row");
+        row.style.setProperty("--event-color", eventColor(event.type));
+        const timestamp = event.timestamp ? event.timestamp.slice(-8) : "—";
+        const target = createElement("span", "event-target", event.target);
+        target.title = event.target;
+        row.append(
+            createElement("span", "event-time", timestamp),
+            createElement("span", "event-type", eventLabel(event.type)),
+            target,
+            createElement("span", "event-value", formatNumber(event.value))
+        );
+        dom.eventList.append(row);
+    }
+}
+
+function renderResults() {
+    if (!state.analysis) return;
+
+    dom.hero.classList.add("hidden");
+    dom.resultsView.classList.remove("hidden");
+    dom.ownerId.textContent = state.analysis.character || t("unknown_owner");
+    dom.fileName.textContent = state.file?.name || "—";
+    dom.fileSize.textContent = state.file ? `· ${formatFileSize(state.file.size)}` : "—";
+    dom.totalDamage.textContent = formatNumber(state.analysis.totalDamage);
+    dom.totalRepair.textContent = formatNumber(state.analysis.totalRepair);
+    dom.totalReceived.textContent = formatNumber(state.analysis.totalReceivedRepair);
+    dom.attackCount.textContent = formatNumber(state.analysis.hitStats.total);
+
+    renderTargetChart();
+    renderHitQuality();
+    renderDistribution();
+    renderEvents();
+}
+
+async function analyzeCurrentFile() {
+    if (!state.file) {
+        showToast(t("select_file_first"), "error");
+        return;
+    }
+
+    setLoading(true);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
 
     try {
-        const data = await parseLogFile(currentLogFile);
-        
-        // 存储分析数据，用于语言切换时更新图表
-        window.currentAnalysisData = data;
-        
-        // 更新汇总信息
-        totalDpsEl.textContent = data.totalDps;
-        totalRepairEl.textContent = data.totalRepair;
-        
-        // 更新总接收维修量
-        const totalReceivedRepairEl = document.getElementById('total-received-repair');
-        if (totalReceivedRepairEl) {
-            totalReceivedRepairEl.textContent = data.totalReceivedRepair;
+        const content = await state.file.text();
+        const analysis = analyzeLogText(content);
+        if (!analysis.processedLines) {
+            showToast(t("no_events"), "error");
+            return;
         }
-        
-        // 更新战斗时间和战斗ID
-        const combatStartTimeEl = document.getElementById('combat-start-time');
-        const combatIdEl = document.getElementById('combat-id');
-        
-        // 更新命中类型统计
-        const totalAttacksEl = document.getElementById('total-attacks');
-        const glancingHitsEl = document.getElementById('glancing-hits');
-        const normalHitsEl = document.getElementById('normal-hits');
-        const penetrationHitsEl = document.getElementById('penetration-hits');
-        const criticalHitsEl = document.getElementById('critical-hits');
-        const missesEl = document.getElementById('misses');
-        
-        // 更新维修统计
-        const totalRepairCountEl = document.getElementById('total-repair-count');
-        const zeroRepairCountEl = document.getElementById('zero-repair-count');
-        const averageRepairValueEl = document.getElementById('average-repair-value');
-        
-        combatStartTimeEl.textContent = data.combatStartTime || '-';
-        combatIdEl.textContent = data.combatId || '-';
-        
-        totalAttacksEl.textContent = data.hitStats.total || 0;
-        glancingHitsEl.textContent = `${data.hitStats.glancing || 0} (${data.hitRates.glancing || 0}%)`;
-        normalHitsEl.textContent = `${data.hitStats.hit || 0} (${data.hitRates.hit || 0}%)`;
-        penetrationHitsEl.textContent = `${data.hitStats.penetration || 0} (${data.hitRates.penetration || 0}%)`;
-        criticalHitsEl.textContent = `${data.hitStats.critical || 0} (${data.hitRates.critical || 0}%)`;
-        missesEl.textContent = `${data.hitStats.miss || 0} (${data.hitRates.miss || 0}%)`;
-        
-        totalRepairCountEl.textContent = data.repairStats.totalRepairCount || 0;
-        zeroRepairCountEl.textContent = `${data.repairStats.zeroRepairCount || 0} (${data.repairStats.zeroRepairRate || 0}%)`;
-        averageRepairValueEl.textContent = data.repairStats.averageRepairValue || 0;
 
-        // 渲染图表
-        renderDpsChart(data);
-        renderRepairChart(data);
-        renderReceivedRepairChart(data);
-        
-        // 渲染战斗回放
-        renderCombatReplay(data);
-
-        // 显示分析结果区域
-        logAnalysisSection.style.display = 'block';
-
-        // 显示处理结果反馈
-        let message = translations[currentLanguage].log_analyzed;
-        if (data.processedLines > 0) {
-            message += ` ${translations[currentLanguage].valid_data_found} ${data.processedLines} ${translations[currentLanguage].lines}`;
-        }
-        showError(message);
+        state.analysis = analysis;
+        state.activeCategory = "damage";
+        document.querySelectorAll(".category-tab").forEach((tab) => {
+            const active = tab.dataset.category === "damage";
+            tab.classList.toggle("active", active);
+            tab.setAttribute("aria-selected", String(active));
+        });
+        renderResults();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        showToast(t("analyzed_ok"));
     } catch (error) {
-        showError(translations[currentLanguage].analysis_failed + error.message);
+        console.error(error);
+        showToast(t("read_failed"), "error");
     } finally {
-        hideLoading();
+        setLoading(false);
     }
 }
 
-// 初始化事件监听器
-function initEventListeners() {
-    // 分析按钮点击事件
-    if (analyzeLogBtn) {
-        analyzeLogBtn.addEventListener('click', analyzeLog);
+async function selectFile(file) {
+    if (!isValidLogFile(file)) return;
+    state.file = file;
+    await analyzeCurrentFile();
+}
+
+function chooseFile() {
+    dom.fileInput.value = "";
+    dom.fileInput.click();
+}
+
+function showHome() {
+    dom.resultsView.classList.add("hidden");
+    dom.hero.classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function initializeFileEvents() {
+    dom.fileInput.addEventListener("change", (event) => {
+        const [file] = event.target.files;
+        if (file) selectFile(file);
+    });
+
+    dom.analyzeButton.addEventListener("click", analyzeCurrentFile);
+    dom.changeButton.addEventListener("click", chooseFile);
+    dom.navAnalyze.addEventListener("click", chooseFile);
+
+    for (const eventName of ["dragenter", "dragover"]) {
+        dom.hero.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dom.hero.classList.add("drag-active");
+        });
     }
-    
-    // 初始化语言切换功能
-    initLanguageSwitch();
+
+    for (const eventName of ["dragleave", "drop"]) {
+        dom.hero.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dom.hero.classList.remove("drag-active");
+        });
+    }
+
+    dom.hero.addEventListener("drop", (event) => {
+        const [file] = event.dataTransfer.files;
+        if (file) selectFile(file);
+    });
+
+    document.querySelector(".brand").addEventListener("click", (event) => {
+        event.preventDefault();
+        showHome();
+    });
 }
 
-// 初始化页面
-function init() {
-    // 初始化文件上传功能
-    initFileUpload();
-    
-    // 初始化事件监听器
-    initEventListeners();
+function initializeControls() {
+    document.querySelectorAll("[data-language]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.language = button.dataset.language;
+            localStorage.setItem("evelog-language", state.language);
+            applyTranslations();
+        });
+    });
+
+    document.querySelectorAll(".category-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+            state.activeCategory = tab.dataset.category;
+            document.querySelectorAll(".category-tab").forEach((candidate) => {
+                const active = candidate === tab;
+                candidate.classList.toggle("active", active);
+                candidate.setAttribute("aria-selected", String(active));
+            });
+            renderDistribution();
+        });
+    });
+
+    dom.navGuide.addEventListener("click", () => showToast(t("guide_note")));
+    dom.navPrivacy.addEventListener("click", () => showToast(t("privacy_note")));
 }
 
-// 页面加载完成后初始化
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
+function initializeFlowMotion() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let animationFrame = 0;
+    dom.siteFrame.addEventListener("pointermove", (event) => {
+        if (animationFrame) return;
+        animationFrame = requestAnimationFrame(() => {
+            const bounds = dom.siteFrame.getBoundingClientRect();
+            const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+            const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+            document.documentElement.style.setProperty("--flow-x", `${x * 12}px`);
+            document.documentElement.style.setProperty("--flow-y", `${y * 8}px`);
+            animationFrame = 0;
+        });
+    });
+
+    dom.siteFrame.addEventListener("pointerleave", () => {
+        document.documentElement.style.setProperty("--flow-x", "0px");
+        document.documentElement.style.setProperty("--flow-y", "0px");
+    });
 }
+
+initializeFileEvents();
+initializeControls();
+initializeFlowMotion();
+applyTranslations();

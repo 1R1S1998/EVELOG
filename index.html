@@ -1,180 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVE Online Log Analyze</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/css/chart.min.css">
-    <link rel="stylesheet" href="static/css/style.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080714">
+    <meta name="description" content="EVE Online 战斗日志分析工具。">
+    <title>EVELOG · 战斗日志分析</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="./static/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- 头部 -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="title">
-                    <i class="fas fa-file-alt"></i>
-                    EVE Online Log Analyze
-                </h1>
-                <div class="language-switch">
-                    <button id="en-btn" class="lang-btn active">EN</button>
-                    <button id="zh-btn" class="lang-btn">中文</button>
-                </div>
+    <a class="skip-link" href="#main-workspace" data-i18n="skip_to_content">跳到主要内容</a>
+
+    <div class="page-aura" aria-hidden="true"></div>
+
+    <div class="site-frame" id="site-frame">
+        <div class="star-field" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+
+        <header class="topbar">
+            <a class="brand" href="#upload" aria-label="EVELOG 首页">
+                <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+                    <circle cx="20" cy="20" r="13.5"></circle>
+                    <path d="M30.5 13.6A10.8 10.8 0 1 0 31 25.5a8.2 8.2 0 1 1-.5-11.9Z"></path>
+                </svg>
+                <span>EVELOG</span>
+            </a>
+
+            <nav class="primary-nav" aria-label="主要导航">
+                <button class="nav-button active" id="nav-analyze" type="button" data-i18n="nav_analysis">日志分析</button>
+                <button class="nav-button" id="nav-guide" type="button" data-i18n="nav_guide">使用说明</button>
+                <button class="nav-button" id="nav-privacy" type="button" data-i18n="nav_privacy">隐私</button>
+            </nav>
+
+            <div class="language-switch" role="group" aria-label="Language">
+                <button class="language-button active" type="button" data-language="zh" aria-pressed="true">中</button>
+                <span aria-hidden="true">/</span>
+                <button class="language-button" type="button" data-language="en" aria-pressed="false">EN</button>
             </div>
         </header>
 
-        <!-- Log上传区域 -->
-        <section class="section">
-            <div class="section-header">
-                <h2 data-lang-key="upload_section_title">
-                    <i class="fas fa-upload"></i>
-                    上传Log文件
-                </h2>
-            </div>
-            <div class="log-upload-container">
-                <div class="log-upload-section">
-                    <h3 data-lang-key="select_log_file">选择EVE Online战斗日志文件</h3>
-                    <div class="file-upload-area">
-                        <input type="file" id="log-file" accept=".txt,.log" class="file-input">
-                        <label for="log-file" class="file-label">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span data-lang-key="drag_drop_here">点击或拖拽文件到此处</span>
-                        </label>
-                    </div>
-                    <button id="analyze-log-btn" class="btn btn-primary" style="margin-top: 20px;">
-                        <i class="fas fa-analytics"></i>
-                        <span data-lang-key="analyze_log">分析Log</span>
-                    </button>
-                </div>
-            </div>
-        </section>
+        <main id="main-workspace">
+            <section class="hero-view" id="upload" aria-labelledby="page-title">
+                <div class="hero-copy">
+                    <h1 id="page-title" data-i18n="hero_title">今天你C了吗</h1>
+                    <p data-i18n="hero_body">上传 EVE 战斗日志，快速查看伤害、维修与命中表现。</p>
 
-        <!-- 分析结果 -->
-        <section class="section" id="log-analysis-section" style="display: none;">
-            <div class="section-header">
-                <h2 data-lang-key="analysis_results">
-                    <i class="fas fa-chart-pie"></i>
-                    分析结果
-                </h2>
-            </div>
-            <!-- 伤害相关统计 -->
-            <div class="analysis-summary">
-                <h3 data-lang-key="damage_statistics">伤害统计</h3>
-                <div class="summary-card">
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="total_dps">伤害量</span>
-                        <span class="summary-value" id="total-dps">0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="total_attacks">总攻击次数</span>
-                        <span class="summary-value" id="total-attacks">0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="glancing_hits">轻轻擦过</span>
-                        <span class="summary-value" id="glancing-hits">0 (0%)</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="normal_hits">命中</span>
-                        <span class="summary-value" id="normal-hits">0 (0%)</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="penetration_hits">穿透</span>
-                        <span class="summary-value" id="penetration-hits">0 (0%)</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="critical_hits">强力一击</span>
-                        <span class="summary-value" id="critical-hits">0 (0%)</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="misses">完全没有打中</span>
-                        <span class="summary-value" id="misses">0 (0%)</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="combat_start_time">战斗开始时间</span>
-                        <span class="summary-value" id="combat-start-time">-</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="combat_id">战斗ID</span>
-                        <span class="summary-value" id="combat-id">-</span>
-                    </div>
+                    <label class="upload-button" for="log-file">
+                        <span data-i18n="choose_file">选择日志</span>
+                    </label>
+                    <input id="log-file" type="file" accept=".txt,.log,text/plain" hidden>
+                    <p class="drop-hint" id="drop-hint" data-i18n="drop_hint">或拖放 .log 文件</p>
                 </div>
-            </div>
-            
-            <!-- 维修相关统计 -->
-            <div class="analysis-summary">
-                <h3 data-lang-key="repair_statistics">维修统计</h3>
-                <div class="summary-card">
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="total_repair">总维修量</span>
-                        <span class="summary-value" id="total-repair">0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="total_received_repair">总接收维修量</span>
-                        <span class="summary-value" id="total-received-repair">0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="total_repair_count">总维修次数</span>
-                        <span class="summary-value" id="total-repair-count">0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="zero_repair_count">维修量为0的次数</span>
-                        <span class="summary-value" id="zero-repair-count">0 (0%)</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label" data-lang-key="average_repair_value">平均每次维修值</span>
-                        <span class="summary-value" id="average-repair-value">0</span>
-                    </div>
-                </div>
-            </div>
-            <div class="chart-container">
-                <canvas id="dps-chart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="repair-chart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="received-repair-chart"></canvas>
-            </div>
-            
-            <!-- 战斗回放 -->
-            <div class="section-header" style="margin-top: 40px;">
-                <h2 data-lang-key="combat_replay">
-                    <i class="fas fa-play-circle"></i>
-                    战斗回放
-                </h2>
-            </div>
-            <div class="combat-replay">
-                <div id="combat-events" class="combat-events">
-                    <!-- 战斗事件将在这里动态生成 -->
-                </div>
-            </div>
-        </section>
 
-        <!-- 加载指示器 -->
-        <div id="loading" class="loading hidden">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">分析中...</div>
-        </div>
+                <div class="flow-field flow-field-home" aria-hidden="true">
+                    <span class="flow-halo halo-violet"></span>
+                    <span class="flow-halo halo-blue"></span>
+                    <span class="flow-ribbon ribbon-back"></span>
+                    <span class="flow-ribbon ribbon-middle"></span>
+                    <span class="flow-ribbon ribbon-front"></span>
+                    <span class="flow-glint glint-one"></span>
+                    <span class="flow-glint glint-two"></span>
+                </div>
+            </section>
 
-        <!-- 错误提示 -->
-        <div id="error-message" class="error-message hidden">
-            <i class="fas fa-exclamation-circle"></i>
-            <span id="error-text"></span>
-        </div>
-        
-        <!-- 网站制作人信息 -->
-        <div class="footer">
-            <div class="footer-content">
-                <span>Website created by: Iris Amour</span>
-            </div>
-        </div>
+            <section class="results-view hidden" id="results-view" aria-live="polite">
+                <div class="results-title-row">
+                    <h1 id="owner-id">—</h1>
+                </div>
+
+                <div class="results-flow" aria-hidden="true">
+                    <span class="result-arc arc-violet"></span>
+                    <span class="result-arc arc-blue"></span>
+                    <span class="result-arc arc-gold"></span>
+                </div>
+
+                <div class="results-surface">
+                    <div class="file-toolbar">
+                        <div class="selected-file">
+                            <svg viewBox="0 0 24 28" aria-hidden="true"><path d="M4 1h10l6 6v20H4zM14 1v7h6"></path></svg>
+                            <span id="file-name">—</span>
+                            <small id="file-size">—</small>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button class="surface-button" id="analyze-log-button" type="button">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"></path></svg>
+                                <span data-i18n="reanalyze">重新分析</span>
+                            </button>
+                            <button class="text-button" id="change-file-button" type="button" data-i18n="change_file">更换文件</button>
+                        </div>
+                    </div>
+
+                    <dl class="metric-rail">
+                        <div><dt data-i18n="total_damage">总伤害</dt><dd class="metric-damage" id="total-damage">0</dd></div>
+                        <div><dt data-i18n="outgoing_repair">输出维修</dt><dd class="metric-repair" id="total-repair">0</dd></div>
+                        <div><dt data-i18n="received_repair">接收维修</dt><dd class="metric-received" id="total-received">0</dd></div>
+                        <div><dt data-i18n="attack_count">攻击次数</dt><dd class="metric-amber" id="attack-count">0</dd></div>
+                    </dl>
+
+                    <div class="overview-grid">
+                        <section class="chart-section" aria-labelledby="target-chart-title">
+                            <h2 id="target-chart-title" data-i18n="target_damage">目标伤害</h2>
+                            <div class="bar-chart" id="target-chart"></div>
+                        </section>
+
+                        <section class="hit-section" aria-labelledby="hit-quality-title">
+                            <h2 id="hit-quality-title" data-i18n="hit_quality">命中质量</h2>
+                            <div class="hit-content">
+                                <div class="hit-ring" id="hit-ring">
+                                    <span><small data-i18n="hit_label">命中</small><b id="hit-total">0</b><em id="hit-rate">/ 0%</em></span>
+                                </div>
+                                <ul class="hit-legend" id="hit-legend"></ul>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="category-tabs" role="tablist" aria-label="Data category">
+                        <button class="category-tab active" role="tab" type="button" data-category="damage" aria-selected="true" data-i18n="damage">伤害</button>
+                        <button class="category-tab" role="tab" type="button" data-category="repair" aria-selected="false" data-i18n="outgoing_repair">输出维修</button>
+                        <button class="category-tab" role="tab" type="button" data-category="received" aria-selected="false" data-i18n="received_repair">接收维修</button>
+                    </div>
+
+                    <div class="details-grid">
+                        <section class="distribution-section" aria-labelledby="distribution-title">
+                            <div class="section-title-row">
+                                <h2 id="distribution-title" data-i18n="target_distribution">目标分布</h2>
+                                <span id="category-summary"></span>
+                            </div>
+                            <div class="distribution-list" id="distribution-list"></div>
+                        </section>
+
+                        <section class="events-section" aria-labelledby="events-title">
+                            <div class="section-title-row">
+                                <h2 id="events-title" data-i18n="event_replay">事件回放</h2>
+                                <span id="event-count"></span>
+                            </div>
+                            <div class="event-list" id="event-list"></div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <!-- 图表库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    
-    <!-- JavaScript -->
-    <script src="static/js/app.js"></script>
+    <div class="loading-overlay hidden" id="loading" role="status">
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span data-i18n="analyzing">正在解析日志…</span>
+    </div>
+
+    <div class="toast hidden" id="toast" role="status" aria-live="assertive">
+        <span class="toast-icon" aria-hidden="true"></span>
+        <span id="toast-text"></span>
+    </div>
+
+    <script type="module" src="./static/js/app.js"></script>
 </body>
 </html>

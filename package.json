@@ -1,16 +1,18 @@
 {
-  "name": "eve-log-analyzer",
-  "version": "1.0.0",
-  "description": "EVE Online Log Analyzer Web Application",
+  "name": "evelog",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser-only EVE Online combat log analyzer",
   "homepage": "https://github.com/1R1S1998/EVELOG",
   "scripts": {
-    "vercel-build": "echo 'Static build for Vercel'"
+    "test": "node --test tests/*.test.mjs",
+    "vercel-build": "node --test tests/*.test.mjs"
   },
   "keywords": [
     "eve-online",
-    "log-analyzer",
-    "web-application"
+    "combat-log",
+    "log-analyzer"
   ],
-  "author": "",
   "license": "MIT"
 }
