@@ -17,7 +17,7 @@ const translations = {
         outgoing_repair: "输出维修",
         received_repair: "接收维修",
         attack_count: "攻击次数",
-        target_damage: "目标伤害",
+        weapon_damage: "武器伤害",
         hit_quality: "命中质量",
         hit_label: "命中",
         damage: "伤害",
@@ -50,7 +50,8 @@ const translations = {
         repair_detail: "{count} 次",
         damage_detail: "{count} 次攻击",
         received_detail: "{count} 个来源",
-        unknown_owner: "UNKNOWN PILOT"
+        unknown_owner: "UNKNOWN PILOT",
+        unknown_weapon: "未知武器"
     },
     en: {
         skip_to_content: "Skip to main content",
@@ -66,7 +67,7 @@ const translations = {
         outgoing_repair: "Outgoing repair",
         received_repair: "Received repair",
         attack_count: "Attacks",
-        target_damage: "Damage by target",
+        weapon_damage: "Damage by weapon",
         hit_quality: "Hit quality",
         hit_label: "Hits",
         damage: "Damage",
@@ -99,7 +100,8 @@ const translations = {
         repair_detail: "{count} cycles",
         damage_detail: "{count} attacks",
         received_detail: "{count} sources",
-        unknown_owner: "UNKNOWN PILOT"
+        unknown_owner: "UNKNOWN PILOT",
+        unknown_weapon: "Unknown weapon"
     }
 };
 
@@ -244,9 +246,9 @@ function getSeries(category) {
     };
 }
 
-function renderTargetChart() {
+function renderWeaponChart() {
     dom.targetChart.replaceChildren();
-    const entries = sortedEntries(state.analysis.damageByTarget).slice(0, 5);
+    const entries = sortedEntries(state.analysis.damageByWeapon).slice(0, 5);
     if (!entries.length) {
         dom.targetChart.append(createElement("div", "empty-chart", t("no_data")));
         return;
@@ -255,8 +257,9 @@ function renderTargetChart() {
     const maximum = Math.max(...entries.map(([, value]) => value), 1);
     for (const [name, value] of entries) {
         const row = createElement("div", "bar-row");
-        const label = createElement("span", "bar-label", name);
-        label.title = name;
+        const displayName = name === "Unknown weapon" ? t("unknown_weapon") : name;
+        const label = createElement("span", "bar-label", displayName);
+        label.title = displayName;
         const track = createElement("span", "bar-track");
         const fill = createElement("span", "bar-fill");
         fill.style.setProperty("--bar-size", `${(value / maximum) * 100}%`);
@@ -421,7 +424,7 @@ function renderResults() {
     dom.totalReceived.textContent = formatNumber(state.analysis.totalReceivedRepair);
     dom.attackCount.textContent = formatNumber(state.analysis.hitStats.total);
 
-    renderTargetChart();
+    renderWeaponChart();
     renderHitQuality();
     renderDistribution();
     renderEvents();

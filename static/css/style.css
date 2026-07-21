@@ -658,11 +658,15 @@ button {
     margin-top: 15px;
 }
 
-.bar-label,
 .bar-value {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.bar-label {
+    line-height: 1.45;
+    overflow-wrap: anywhere;
 }
 
 .bar-track {

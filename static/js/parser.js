@@ -4,6 +4,8 @@ const EVENT_TYPES = Object.freeze({
     RECEIVED: "received"
 });
 
+const UNKNOWN_WEAPON = "Unknown weapon";
+
 function parseNumber(value) {
     const parsed = Number.parseInt(String(value).replace(/,/g, ""), 10);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -85,6 +87,16 @@ function extractDamageTarget(line) {
     return missed ? cleanEntityName(missed[1]) : "Unknown";
 }
 
+function extractDamageWeapon(line) {
+    const visible = stripMarkup(line);
+    const separated = visible.match(/\s-\s+(.+?)\s+-\s+(?:命中|未命中|轻轻擦过|穿透|强力一击|hit(?:s)?|miss(?:es|ed)?|glanc(?:es|ed|ing)?|penetrat(?:es|ed|ing)?|critical|strong)(?:\s|$)/i);
+    if (separated) return cleanEntityName(separated[1]) || UNKNOWN_WEAPON;
+
+    const payload = visible.replace(/^\[.*?\]\s*\(combat\)\s*/i, "");
+    const missed = payload.match(/^(?:你的\s*|your\s+)?(.+?)\s+(?:完全没有打中|未命中|miss(?:es|ed)?)(?:\s|$)/i);
+    return missed ? cleanEntityName(missed[1]) || UNKNOWN_WEAPON : UNKNOWN_WEAPON;
+}
+
 function extractRepairTarget(line) {
     const pilot = extractPilot(line);
     const ship = extractShip(line);
@@ -116,6 +128,7 @@ function detectRichEvent(line) {
             timestamp,
             type: EVENT_TYPES.DAMAGE,
             target: extractDamageTarget(line),
+            weapon: extractDamageWeapon(line),
             value: missed ? 0 : extractAmount(line),
             quality: classifyHit(line)
         };
@@ -155,6 +168,7 @@ function detectPlainEvent(line) {
         timestamp: match[1].replace(/-/g, "."),
         type,
         target: cleanEntityName(match[4]) || "Unknown",
+        weapon: type === EVENT_TYPES.DAMAGE ? UNKNOWN_WEAPON : null,
         value: parseNumber(match[5]),
         quality: type === EVENT_TYPES.DAMAGE ? classifyHit(line) : null
     };
@@ -170,6 +184,7 @@ function createAnalysis() {
         totalRepair: 0,
         totalReceivedRepair: 0,
         damageByTarget: {},
+        damageByWeapon: {},
         repairByTarget: {},
         receivedBySource: {},
         events: [],
@@ -261,6 +276,7 @@ export function analyzeLogText(content) {
         if (event.type === EVENT_TYPES.DAMAGE) {
             analysis.totalDamage += event.value;
             addToGroup(analysis.damageByTarget, event.target, event.value);
+            addToGroup(analysis.damageByWeapon, event.weapon || UNKNOWN_WEAPON, event.value);
             analysis.hitStats.total += 1;
             analysis.hitStats[event.quality || "normal"] += 1;
         }

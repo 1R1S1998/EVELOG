@@ -13,6 +13,7 @@ test("parses damage, outgoing repairs, hit quality, and combat metadata", async 
     const analysis = analyzeLogText(await fixture("test_log.txt"));
 
     assert.equal(analysis.totalDamage, 1_200_911);
+    assert.equal(analysis.damageByWeapon["'赫姆达洱之咆哮'爆炸末日武器"], 1_200_911);
     assert.equal(analysis.totalRepair, 1_623);
     assert.equal(analysis.totalReceivedRepair, 0);
     assert.equal(analysis.processedLines, 3);
@@ -55,4 +56,16 @@ test("classifies specific hit qualities before generic hits", () => {
     assert.equal(analysis.hitStats.glancing, 1);
     assert.equal(analysis.hitStats.miss, 1);
     assert.equal(analysis.hitStats.normal, 0);
+});
+
+test("groups the overview chart by weapon while keeping target totals separate", () => {
+    const log = [
+        "[ 2026.02.22 13:00:00 ] (combat) <color=0xff00ffff><b>100</b> <color=0x77ffffff><font size=10>对</font> <b><color=0xffffffff>同一目标</b><font size=10><color=0x77ffffff> - 激光炮* - 命中 同一目标",
+        "[ 2026.02.22 13:00:01 ] (combat) <color=0xff00ffff><b>200</b> <color=0x77ffffff><font size=10>对</font> <b><color=0xffffffff>同一目标</b><font size=10><color=0x77ffffff> - 导弹发射器* - 命中 同一目标"
+    ].join("\n");
+
+    const analysis = analyzeLogText(log);
+
+    assert.deepEqual(analysis.damageByWeapon, { "激光炮": 100, "导弹发射器": 200 });
+    assert.deepEqual(analysis.damageByTarget, { "同一目标": 300 });
 });
