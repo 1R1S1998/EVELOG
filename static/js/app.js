@@ -418,6 +418,7 @@ function renderEvents() {
 function renderResults() {
     if (!state.analysis) return;
 
+    dom.siteFrame.classList.add("has-results");
     dom.hero.classList.add("hidden");
     dom.resultsView.classList.remove("hidden");
     dom.ownerId.textContent = state.analysis.character || t("unknown_owner");
@@ -481,6 +482,7 @@ function chooseFile() {
 }
 
 function showHome() {
+    dom.siteFrame.classList.remove("has-results");
     dom.resultsView.classList.add("hidden");
     dom.hero.classList.remove("hidden");
     window.scrollTo({ top: 0, behavior: "smooth" });
