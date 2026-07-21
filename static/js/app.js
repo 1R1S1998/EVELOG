@@ -6,12 +6,11 @@ const translations = {
     zh: {
         skip_to_content: "跳到主要内容",
         nav_analysis: "日志分析",
-        nav_guide: "使用说明",
-        nav_privacy: "隐私",
         hero_title: "今天你C了吗",
         hero_body: "上传 EVE 战斗日志，快速查看伤害、维修与命中表现。",
         choose_file: "选择日志",
-        drop_hint: "或拖放 .log 文件",
+        drop_title: "拖放战斗日志到这里",
+        drop_hint: "支持 .log 文件",
         reanalyze: "重新分析",
         change_file: "更换文件",
         total_damage: "总伤害",
@@ -51,19 +50,16 @@ const translations = {
         repair_detail: "{count} 次",
         damage_detail: "{count} 次攻击",
         received_detail: "{count} 个来源",
-        guide_note: "选择日志，即刻生成战斗分析。",
-        privacy_note: "数据不留痕。",
         unknown_owner: "UNKNOWN PILOT"
     },
     en: {
         skip_to_content: "Skip to main content",
         nav_analysis: "Log analysis",
-        nav_guide: "Guide",
-        nav_privacy: "Privacy",
         hero_title: "Did you C today?",
         hero_body: "Upload an EVE combat log to see damage, repairs, and hit quality.",
         choose_file: "Choose log",
-        drop_hint: "or drop a .log file",
+        drop_title: "Drop a combat log here",
+        drop_hint: "Supports .log files",
         reanalyze: "Analyze again",
         change_file: "Change file",
         total_damage: "Total damage",
@@ -103,8 +99,6 @@ const translations = {
         repair_detail: "{count} cycles",
         damage_detail: "{count} attacks",
         received_detail: "{count} sources",
-        guide_note: "Choose a log to generate the analysis.",
-        privacy_note: "No data trail.",
         unknown_owner: "UNKNOWN PILOT"
     }
 };
@@ -143,9 +137,7 @@ const dom = {
     loading: document.querySelector("#loading"),
     toast: document.querySelector("#toast"),
     toastText: document.querySelector("#toast-text"),
-    navAnalyze: document.querySelector("#nav-analyze"),
-    navGuide: document.querySelector("#nav-guide"),
-    navPrivacy: document.querySelector("#nav-privacy")
+    navAnalyze: document.querySelector("#nav-analyze")
 };
 
 function t(key, replacements = {}) {
@@ -543,9 +535,6 @@ function initializeControls() {
             renderDistribution();
         });
     });
-
-    dom.navGuide.addEventListener("click", () => showToast(t("guide_note")));
-    dom.navPrivacy.addEventListener("click", () => showToast(t("privacy_note")));
 }
 
 function initializeFlowMotion() {

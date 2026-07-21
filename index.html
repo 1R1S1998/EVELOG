@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#080714">
+    <meta name="theme-color" content="#030405">
     <meta name="description" content="EVE Online 战斗日志分析工具。">
     <title>EVELOG · 战斗日志分析</title>
     <link rel="icon" href="data:,">
@@ -30,8 +30,6 @@
 
             <nav class="primary-nav" aria-label="主要导航">
                 <button class="nav-button active" id="nav-analyze" type="button" data-i18n="nav_analysis">日志分析</button>
-                <button class="nav-button" id="nav-guide" type="button" data-i18n="nav_guide">使用说明</button>
-                <button class="nav-button" id="nav-privacy" type="button" data-i18n="nav_privacy">隐私</button>
             </nav>
 
             <div class="language-switch" role="group" aria-label="Language">
@@ -46,22 +44,24 @@
                 <div class="hero-copy">
                     <h1 id="page-title" data-i18n="hero_title">今天你C了吗</h1>
                     <p data-i18n="hero_body">上传 EVE 战斗日志，快速查看伤害、维修与命中表现。</p>
+                </div>
 
+                <div class="aurora aurora-home" aria-hidden="true">
+                    <span class="aurora-core"></span>
+                    <span class="aurora-rim"></span>
+                    <span class="aurora-haze"></span>
+                </div>
+
+                <div class="upload-zone">
+                    <svg class="upload-file-icon" viewBox="0 0 64 76" aria-hidden="true">
+                        <path d="M10 2h29l15 15v57H10zM39 2v16h15"></path>
+                    </svg>
+                    <h2 data-i18n="drop_title">拖放战斗日志到这里</h2>
+                    <p class="drop-hint" id="drop-hint" data-i18n="drop_hint">支持 .log 文件</p>
                     <label class="upload-button" for="log-file">
                         <span data-i18n="choose_file">选择日志</span>
                     </label>
                     <input id="log-file" type="file" accept=".txt,.log,text/plain" hidden>
-                    <p class="drop-hint" id="drop-hint" data-i18n="drop_hint">或拖放 .log 文件</p>
-                </div>
-
-                <div class="flow-field flow-field-home" aria-hidden="true">
-                    <span class="flow-halo halo-violet"></span>
-                    <span class="flow-halo halo-blue"></span>
-                    <span class="flow-ribbon ribbon-back"></span>
-                    <span class="flow-ribbon ribbon-middle"></span>
-                    <span class="flow-ribbon ribbon-front"></span>
-                    <span class="flow-glint glint-one"></span>
-                    <span class="flow-glint glint-two"></span>
                 </div>
             </section>
 
@@ -70,10 +70,10 @@
                     <h1 id="owner-id">—</h1>
                 </div>
 
-                <div class="results-flow" aria-hidden="true">
-                    <span class="result-arc arc-violet"></span>
-                    <span class="result-arc arc-blue"></span>
-                    <span class="result-arc arc-gold"></span>
+                <div class="aurora aurora-results" aria-hidden="true">
+                    <span class="aurora-core"></span>
+                    <span class="aurora-rim"></span>
+                    <span class="aurora-haze"></span>
                 </div>
 
                 <div class="results-surface">
